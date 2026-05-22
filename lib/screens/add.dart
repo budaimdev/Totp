@@ -22,9 +22,17 @@ class _Add extends State {
       });
     }
 
-    AlertDialog(
-      content: Text("${_barcode?.rawValue}"),
-    );
+    if (_barcode != null) {
+      showDialog(context: context, builder: (BuildContext context) {
+        return AlertDialog(
+          content: Text("${_barcode?.rawValue}"),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, "Ok"),
+                child: const Text("Ok"))
+          ],
+        );
+      });
+    }
   }
 
 
@@ -34,7 +42,7 @@ class _Add extends State {
 
     controller = MobileScannerController(
         formats: [BarcodeFormat.qrCode],
-        torchEnabled: _useTorch,
+        torchEnabled: false,
         autoStart: true
     );
   }
@@ -63,11 +71,12 @@ class _Add extends State {
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 50),
                 child: IconButton.filled(
-                    onPressed: () =>
+                    onPressed: ()
                     {
                       setState(() {
                         _useTorch = !_useTorch;
-                      })
+                      });
+                      controller.toggleTorch();
                     },
                     icon: _useTorch ? Icon(Icons.flashlight_off) : Icon(
                         Icons.flashlight_on)
