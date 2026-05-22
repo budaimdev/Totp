@@ -8,32 +8,57 @@ on:
 
 jobs:
   build-android:
-    name: Build Android APK
+    name: Build & Deploy Android
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      # 1. Stažení kódu (Aktualizováno na v4)
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      # 2. Nastavení Javy (Důležité pro stabilitu Android buildu, doporučená verze 17)
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 3. Nastavení Flutteru s povolenou keší (Ušetří hromadu času při dalším běhu)
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.0'
           channel: stable
+          cache: true # Automaticky kešuje pub dependencies a Flutter SDK
 
+      # 4. Instalace závislostí
       - name: Install dependencies
         run: flutter pub get
 
+      # 5. Statická analýza kódu
       - name: Analyze code
         run: flutter analyze
 
+      # 6. Spuštění unit a widget testů
       - name: Run tests
         run: flutter test
 
-      - name: Build APK
-        run: flutter build apk --release
+      # 7. Build aplikací (Generujeme APK pro testery a AAB pro Google Play)
+      - name: Build Release Binaries
+        run: |
+          flutter build apk --release
+          flutter build appbundle --release
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
+      # 8. Nahrání APK jako artefaktu (Aktualizováno na v4)
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      # 9. Nahrání AAB (App Bundle) jako artefaktu
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: build/app/outputs/bundle/release/app-release.aab
