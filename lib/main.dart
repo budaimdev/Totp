@@ -65,7 +65,7 @@ class _NavigationStuffState extends State<NavigationStuff> {
         title: const Text("TOTP"),
         actions: [
           IconButton(
-              onPressed: () => print("Reloaded"), icon: Icon(Icons.refresh))
+              onPressed: () => {}, icon: Icon(Icons.refresh))
         ],
       ),
       drawer: Sidebar(),
