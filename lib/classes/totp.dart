@@ -1,5 +1,5 @@
 class Totp {
-  String name;
+  final String name;
 
-  Totp(this.name);
+  const Totp(this.name);
 }

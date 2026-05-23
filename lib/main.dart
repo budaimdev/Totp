@@ -35,12 +35,14 @@ class Sidebar extends StatelessWidget {
           ListTile(
             leading: Icon(Icons.settings),
             title: const Text("Settings"),
-            onTap: () =>
+              onTap: () {
+                Navigator.pop(context);
                 Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (context) => const Settings(),
                     )
-                ),
+                );
+              }
           )
         ],
       ),

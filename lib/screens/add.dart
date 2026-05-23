@@ -9,7 +9,7 @@ class Add extends StatefulWidget {
 
 }
 
-class _Add extends State {
+class _Add extends State<Add> {
   bool _useTorch = false;
   Barcode? _barcode;
 
@@ -61,10 +61,7 @@ class _Add extends State {
           children: [
             MobileScanner(
               controller: controller,
-              onDetect: (result) =>
-              {
-                _handleBarcode(result)
-              },
+                onDetect: (result) => _handleBarcode(result)
             ),
             Align(
               alignment: Alignment.bottomCenter,
