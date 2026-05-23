@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:totp/helpers/database.dart';
 import 'package:totp/screens/add.dart';
 import 'package:totp/screens/home.dart';
 import 'package:totp/screens/settings.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await DatabaseWrapper().initDatabase();
+
   runApp(const TotpApp());
 }
 
