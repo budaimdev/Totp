@@ -1,8 +1,8 @@
 
 import 'package:flutter/material.dart';
-import 'package:totp/classes/totp.dart';
-import 'package:totp/helpers/database.dart';
-import 'package:totp/screens/scanner.dart';
+import 'package:totp_app/classes/totp_class.dart';
+import 'package:totp_app/helpers/database.dart';
+import 'package:totp_app/screens/scanner.dart';
 
 class Add extends StatefulWidget {
   const Add({super.key});
@@ -85,7 +85,7 @@ class _Add extends State<Add> {
           IconButton(
             onPressed: _isSavingDisabled ? null : () async {
               final db = DatabaseWrapper();
-              Totp newTotp = Totp(
+              TotpClass newTotp = TotpClass(
                   issuer: issuer.text,
                   secret: secret.text,
                   label: label.text,

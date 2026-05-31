@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:totp/classes/totp.dart';
-import 'package:totp/helpers/database.dart';
+import 'package:totp/totp.dart';
+import 'package:totp_app/classes/totp_class.dart';
+import 'package:totp_app/helpers/database.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -10,9 +13,11 @@ class Home extends StatefulWidget {
 }
 
 class HomeState extends State<Home> {
-  late Future<List<Totp>> _totpsFuture;
+  late Future<List<TotpClass>> _totpsFuture;
+  Timer? _timer;
+  int _remainingSeconds = 0;
 
-  Future<List<Totp>> _fetchTotps() async {
+  Future<List<TotpClass>> _fetchTotps() async {
     final database = DatabaseWrapper();
     return await database.getAllTotps();
   }
@@ -21,6 +26,20 @@ class HomeState extends State<Home> {
   void initState() {
     super.initState();
     _totpsFuture = _fetchTotps();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      int currentSeconds = DateTime
+          .now()
+          .second % 30;
+      int remaining = 30 - currentSeconds;
+
+      setState(() {
+        _remainingSeconds = remaining;
+      });
+
+      if (_remainingSeconds == 30) {
+        refresh();
+      }
+    });
   }
 
   void refresh() {
@@ -29,13 +48,33 @@ class HomeState extends State<Home> {
     });
   }
 
+  String _time(String secret, int digits, int period) {
+    final List<int> secretBytes = base32.decode(secret.toUpperCase().trim());
+
+    final totp = Totp(
+        algorithm: Algorithm.sha1,
+        secret: secretBytes,
+        digits: digits,
+        period: period
+    );
+    final datetime = DateTime.now().toUtc();
+    return totp.generate(datetime);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
         future: _totpsFuture,
-        builder: (BuildContext context, AsyncSnapshot<List<Totp>> snapshot) {
+        builder: (BuildContext context,
+            AsyncSnapshot<List<TotpClass>> snapshot) {
           if (snapshot.hasData) {
-            List<Totp>? data = snapshot.data;
+            List<TotpClass>? data = snapshot.data;
             if (data != null) {
               if (data.isEmpty) {
                 return Center(
@@ -46,6 +85,8 @@ class HomeState extends State<Home> {
               return ListView.builder(
                   itemCount: data.length,
                   itemBuilder: (context, index) {
+                    String code = _time(data[index].secret, data[index].digits,
+                        data[index].period);
                     return Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Card(
@@ -68,9 +109,19 @@ class HomeState extends State<Home> {
                                       Text(data[index].issuer, style: TextStyle(
                                           fontSize: 15, color: Colors.grey),),
                                     ],
-                                  )
+                                  ),
+                                  Text(_remainingSeconds.toString())
                                 ],
                               ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text(code, style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 30
+                                  ),)
+                                ],
+                              )
                             ],
                           ),
                         ),

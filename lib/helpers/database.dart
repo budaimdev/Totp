@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
-import 'package:totp/classes/totp.dart';
+import 'package:totp_app/classes/totp_class.dart';
 
 class DatabaseWrapper {
   static final DatabaseWrapper _instance = DatabaseWrapper._internal();
@@ -47,7 +47,7 @@ class DatabaseWrapper {
     );
   }
 
-  Future<int> addTotp(Totp totp) async {
+  Future<int> addTotp(TotpClass totp) async {
     if (_database == null) {
       throw Exception();
     }
@@ -69,18 +69,18 @@ class DatabaseWrapper {
     await _database!.delete("totps", where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<List<Totp>> getAllTotps() async {
+  Future<List<TotpClass>> getAllTotps() async {
     if (_database == null) {
       throw Exception("Databáze není inicializována!");
     }
 
     final List<Map<String, Object?>> totps = await _database!.query("totps");
 
-    final List<Totp> seznamTotp = [];
+    final List<TotpClass> seznamTotp = [];
 
     for (final radek in totps) {
       seznamTotp.add(
-        Totp(
+        TotpClass(
           id: radek['id'] as int,
           issuer: radek['issuer'] as String,
           secret: radek['secret'] as String,
@@ -94,7 +94,7 @@ class DatabaseWrapper {
     return seznamTotp;
   }
 
-  Future<Totp> getOneTotp(int id) async {
+  Future<TotpClass> getOneTotp(int id) async {
     if (_database == null) {
       throw Exception();
     }
@@ -109,7 +109,7 @@ class DatabaseWrapper {
       throw Exception("TOTP with $id was not found");
     }
 
-    final Totp totpConverted = Totp(
+    final TotpClass totpConverted = TotpClass(
       id: totp[0]['id'] as int,
       issuer: totp[0]['issuer'] as String,
       secret: totp[0]['secret'] as String,
