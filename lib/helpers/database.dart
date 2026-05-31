@@ -1,9 +1,14 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:totp/classes/totp.dart';
 
 class DatabaseWrapper {
   static final DatabaseWrapper _instance = DatabaseWrapper._internal();
+  final storage = FlutterSecureStorage();
 
   factory DatabaseWrapper() => _instance;
 
@@ -20,11 +25,21 @@ class DatabaseWrapper {
 
   Future<void> initDatabase() async {
     if (_database != null) return;
+    String? key = await storage.read(key: "key");
+
+    if (key == null) {
+      final random = Random.secure();
+      final values = List<int>.generate(32, (i) => random.nextInt(256));
+      key = base64Url.encode(values);
+
+      await storage.write(key: "key", value: key);
+    }
 
     _database = await openDatabase(
       join(await getDatabasesPath(), "totps.db"),
-      onCreate: (db, version) {
-        return db.execute(
+      password: key,
+      onCreate: (db, version) async {
+        await db.execute(
           'CREATE TABLE totps(id INTEGER PRIMARY KEY, issuer TEXT, secret TEXT, label TEXT, digits INTEGER, period INTEGER)',
         );
       },
