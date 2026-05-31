@@ -1,4 +1,4 @@
-class Totp {
+class TotpClass {
   final int? id;
   final String issuer;
   final String secret; //Base32 string
@@ -6,7 +6,7 @@ class Totp {
   final int digits;
   int period;
 
-  Totp(
+  TotpClass(
       {this.id, required this.issuer, required this.secret, required this.label, required this.digits, this.period = 30});
 
   Map<String, Object?> toMap() {

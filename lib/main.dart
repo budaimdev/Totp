@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:totp/helpers/database.dart';
-import 'package:totp/screens/add.dart';
-import 'package:totp/screens/home.dart';
-import 'package:totp/screens/settings.dart';
+import 'package:totp_app/helpers/database.dart';
+import 'package:totp_app/screens/add.dart';
+import 'package:totp_app/screens/home.dart';
+import 'package:totp_app/screens/settings.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
