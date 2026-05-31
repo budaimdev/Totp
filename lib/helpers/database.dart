@@ -39,11 +39,9 @@ class DatabaseWrapper {
       join(await getDatabasesPath(), "totps.db"),
       password: key,
       onCreate: (db, version) =>
-      {
-        db.execute(
-          'CREATE TABLE totps(id INTEGER PRIMARY KEY, issuer TEXT, secret TEXT, label TEXT, digits INTEGER, period INTEGER)',
-        )
-      },
+          db.execute(
+            'CREATE TABLE totps(id INTEGER PRIMARY KEY, issuer TEXT, secret TEXT, label TEXT, digits INTEGER, period INTEGER)',
+          ),
       version: 1,
     );
   }
