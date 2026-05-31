@@ -1,5 +1,5 @@
 class Totp {
-  final int id;
+  final int? id;
   final String issuer;
   final String secret; //Base32 string
   final String label;
@@ -7,11 +7,11 @@ class Totp {
   int period;
 
   Totp(
-      {required this.id, required this.issuer, required this.secret, required this.label, required this.digits, this.period = 30});
+      {this.id, required this.issuer, required this.secret, required this.label, required this.digits, this.period = 30});
 
   Map<String, Object?> toMap() {
     return {
-      'id': id,
+      if (id != null) 'id': id,
       'issuer': issuer,
       'secret': secret,
       'label': label,
