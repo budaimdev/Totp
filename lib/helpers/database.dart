@@ -38,10 +38,11 @@ class DatabaseWrapper {
     _database = await openDatabase(
       join(await getDatabasesPath(), "totps.db"),
       password: key,
-      onCreate: (db, version) =>
-          db.execute(
-            'CREATE TABLE totps(id INTEGER PRIMARY KEY, issuer TEXT, secret TEXT, label TEXT, digits INTEGER, period INTEGER)',
-          ),
+      onCreate: (db, version) async {
+        await db.execute(
+          'CREATE TABLE totps(id INTEGER PRIMARY KEY, issuer TEXT, secret TEXT, label TEXT, digits INTEGER, period INTEGER)',
+        );
+      },
       version: 1,
     );
   }
