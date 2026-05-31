@@ -15,6 +15,8 @@ class _Add extends State<Add> {
   final TextEditingController label = TextEditingController();
   final TextEditingController issuer = TextEditingController();
   final TextEditingController secret = TextEditingController();
+  final TextEditingController digits = TextEditingController();
+  final TextEditingController period = TextEditingController();
   String rawValue = "";
   String? _errorText;
   bool _isSavingDisabled = true;
@@ -26,6 +28,8 @@ class _Add extends State<Add> {
     label.addListener(_validateForm);
     issuer.addListener(_validateForm);
     secret.addListener(_validateForm);
+    digits.addListener(_validateForm);
+    period.addListener(_validateForm);
   }
 
   void _processScannedQr() {
@@ -43,11 +47,15 @@ class _Add extends State<Add> {
       final String labelText = pathSegments.isNotEmpty ? pathSegments[0] : "";
       final String? secretText = uri.queryParameters["secret"];
       final String? issuerText = uri.queryParameters["issuer"];
+      final String? digitsText = uri.queryParameters["digits"];
+      final String? periodText = uri.queryParameters["period"];
 
       setState(() {
         label.text = labelText;
         issuer.text = issuerText ?? "";
         secret.text = secretText ?? "";
+        digits.text = digitsText ?? "6";
+        period.text = periodText ?? "30";
       });
     } catch (e) {
       setState(() {
@@ -59,7 +67,9 @@ class _Add extends State<Add> {
   void _validateForm() {
     final bool isFormValid = label.text.isNotEmpty &&
         issuer.text.isNotEmpty &&
-        secret.text.isNotEmpty;
+        secret.text.isNotEmpty &&
+        period.text.isNotEmpty &&
+        digits.text.isNotEmpty;
 
     if (_isSavingDisabled == isFormValid) {
       setState(() {
@@ -73,6 +83,8 @@ class _Add extends State<Add> {
     label.dispose();
     issuer.dispose();
     secret.dispose();
+    period.dispose();
+    digits.dispose();
     super.dispose();
   }
 
@@ -89,8 +101,8 @@ class _Add extends State<Add> {
                   issuer: issuer.text,
                   secret: secret.text,
                   label: label.text,
-                  digits: 6,
-                  period: 30
+                  digits: int.tryParse(digits.text) ?? 6,
+                  period: int.tryParse(period.text) ?? 30
               );
               int id = await db.addTotp(newTotp);
               if (context.mounted) {
@@ -134,6 +146,31 @@ class _Add extends State<Add> {
               decoration: InputDecoration(
                 border: OutlineInputBorder(),
               ),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: digits,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: "Digits",
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10.0),
+                Expanded(
+                  child: TextField(
+                    controller: period,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: "Period",
+                    ),
+                  ),
+                ),
+              ],
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
