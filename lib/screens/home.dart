@@ -35,10 +35,6 @@ class HomeState extends State<Home> {
       setState(() {
         _remainingSeconds = remaining;
       });
-
-      if (_remainingSeconds == 30) {
-        refresh();
-      }
     });
   }
 
@@ -49,16 +45,20 @@ class HomeState extends State<Home> {
   }
 
   String _time(String secret, int digits, int period) {
-    final List<int> secretBytes = base32.decode(secret.toUpperCase().trim());
+    try {
+      final List<int> secretBytes = base32.decode(secret.toUpperCase().trim());
 
-    final totp = Totp(
-        algorithm: Algorithm.sha1,
-        secret: secretBytes,
-        digits: digits,
-        period: period
-    );
-    final datetime = DateTime.now().toUtc();
-    return totp.generate(datetime);
+      final totp = Totp(
+          algorithm: Algorithm.sha1,
+          secret: secretBytes,
+          digits: digits,
+          period: period
+      );
+      final datetime = DateTime.now().toUtc();
+      return totp.generate(datetime);
+    } catch (e) {
+      return "------";
+    }
   }
 
   @override
