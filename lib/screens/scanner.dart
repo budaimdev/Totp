@@ -19,7 +19,7 @@ class _Scanner extends State<Scanner> {
 
     final Barcode? barcode = barcodes.barcodes.firstOrNull;
 
-    if (barcode != null) {
+    if (barcode != null && mounted) {
       _hasScanned = true;
       controller.stop();
       Navigator.of(context).pop(barcode.rawValue);

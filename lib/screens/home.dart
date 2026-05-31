@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:totp/classes/totp.dart';
 import 'package:totp/helpers/database.dart';
@@ -12,7 +10,6 @@ class Home extends StatefulWidget {
 }
 
 class HomeState extends State<Home> {
-  int remainingSeconds = 0;
   late Future<List<Totp>> _totpsFuture;
 
   Future<List<Totp>> _fetchTotps() async {
@@ -23,7 +20,7 @@ class HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    _fetchTotps();
+    _totpsFuture = _fetchTotps();
   }
 
   void refresh() {

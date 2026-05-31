@@ -90,12 +90,17 @@ class DatabaseWrapper {
       whereArgs: [id],
     );
 
+    if (totp.isEmpty) {
+      throw Exception("TOTP with $id was not found");
+    }
+
     final Totp totpConverted = Totp(
       id: totp[0]['id'] as int,
       issuer: totp[0]['issuer'] as String,
       secret: totp[0]['secret'] as String,
       label: totp[0]['label'] as String,
       digits: totp[0]['digits'] as int,
+        period: totp[0]['period'] as int
     );
 
     return totpConverted;

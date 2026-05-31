@@ -4,7 +4,7 @@ import 'package:totp/screens/add.dart';
 import 'package:totp/screens/home.dart';
 import 'package:totp/screens/settings.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseWrapper().initDatabase();
 
@@ -64,6 +64,8 @@ class NavigationStuff extends StatefulWidget {
 }
 
 class _NavigationStuffState extends State<NavigationStuff> {
+  final GlobalKey<HomeState> _homeKey = GlobalKey<HomeState>();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,16 +73,22 @@ class _NavigationStuffState extends State<NavigationStuff> {
         title: const Text("TOTP"),
         actions: [
           IconButton(
-              onPressed: () => {}, icon: Icon(Icons.refresh))
+              onPressed: () => _homeKey.currentState?.refresh(),
+              icon: Icon(Icons.refresh))
         ],
       ),
       drawer: Sidebar(),
-      body: Home(),
+      body: Home(key: _homeKey,),
       floatingActionButton: FloatingActionButton(
-        onPressed: () =>
-            Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const Add())
-            ),
+        onPressed: () async {
+          final int? newId = await Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const Add())
+          );
+
+          if (newId != null) {
+            _homeKey.currentState?.refresh();
+          }
+        },
         child: Icon(Icons.add),
       ),
     );

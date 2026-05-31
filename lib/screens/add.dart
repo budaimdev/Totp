@@ -29,25 +29,31 @@ class _Add extends State<Add> {
   }
 
   void _processScannedQr() {
-    Uri uri = Uri.parse(rawValue);
+    try {
+      final uri = Uri.parse(rawValue);
 
-    if (uri.scheme != "otpauth") {
+      if (uri.scheme != "otpauth" || uri.pathSegments.isEmpty) {
+        setState(() {
+          _errorText = "Scanned QR code, but not a valid 2FA code.";
+        });
+        return;
+      }
+
+      final pathSegments = uri.pathSegments[0].split(":");
+      final String labelText = pathSegments.isNotEmpty ? pathSegments[0] : "";
+      final String? secretText = uri.queryParameters["secret"];
+      final String? issuerText = uri.queryParameters["issuer"];
+
       setState(() {
-        _errorText = "Scanned QR code, but not a valid 2FA code.";
+        label.text = labelText;
+        issuer.text = issuerText ?? "";
+        secret.text = secretText ?? "";
       });
-      return;
+    } catch (e) {
+      setState(() {
+        _errorText = "Failed to parse QR code.";
+      });
     }
-
-    var pathSegments = uri.pathSegments[0].split(":");
-    String? labelText = pathSegments[0];
-    String? secretText = uri.queryParameters["secret"];
-    String? issuerText = uri.queryParameters["issuer"];
-
-    setState(() {
-      label.text = labelText;
-      issuer.text = issuerText ?? "";
-      secret.text = secretText ?? "";
-    });
   }
 
   void _validateForm() {
@@ -83,7 +89,8 @@ class _Add extends State<Add> {
                   issuer: issuer.text,
                   secret: secret.text,
                   label: label.text,
-                  digits: 6
+                  digits: 6,
+                  period: 30
               );
               int id = await db.addTotp(newTotp);
               if (context.mounted) {
@@ -120,7 +127,10 @@ class _Add extends State<Add> {
             const Text("TOTP Secret"),
             TextField(
               controller: secret,
-              keyboardType: TextInputType.text,
+              keyboardType: TextInputType.visiblePassword,
+              enableSuggestions: false,
+              autocorrect: false,
+              obscureText: true,
               decoration: InputDecoration(
                 border: OutlineInputBorder(),
               ),
@@ -141,8 +151,8 @@ class _Add extends State<Add> {
                         _errorText = null;
                         rawValue = result;
                       });
+                      _processScannedQr();
                     }
-                    _processScannedQr();
                   },
                   child: const Text("Scan"),
                 )
