@@ -66,8 +66,7 @@ class _SettingsState extends State<Settings> {
           persistAcrossBackgrounding: true,
           biometricOnly: true
       );
-    } on PlatformException catch (e) {
-      print(e);
+    } on PlatformException catch (_) {
       return false;
     }
   }
