@@ -1,6 +1,5 @@
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:totp_app/classes/appsettings.dart';
 import 'package:totp_app/helpers/local_storage.dart';
 
 class Settings extends StatefulWidget {
@@ -17,7 +16,7 @@ class _SettingsState extends State<Settings> {
       LocalStorage.settings.color,
 
       title: Text(
-        'Nastavení barvy',
+        'Color settings',
         style: Theme.of(context).textTheme.titleLarge,
       ),
 
@@ -37,16 +36,15 @@ class _SettingsState extends State<Settings> {
       wheelDiameter: 230,
 
       actionButtons: const ColorPickerActionButtons(
-        dialogOkButtonLabel: 'Uložit',
-        dialogCancelButtonLabel: 'Zrušit',
+        dialogOkButtonLabel: 'Save',
+        dialogCancelButtonLabel: 'Cancel',
       ),
     );
 
     if (newColor != LocalStorage.settings.color) {
-      LocalStorage.prefs.setInt("app_color", newColor.toARGB32());
       setState(() {
-          LocalStorage.settings = Appsettings.load(LocalStorage.prefs);
-          LocalStorage.settingsNotifier.value = LocalStorage.settings;
+        LocalStorage.settings.color = newColor;
+        LocalStorage.settings.save(LocalStorage.prefs);
       });
     }
   }
@@ -69,26 +67,26 @@ class _SettingsState extends State<Settings> {
                     value: value, child: Text(value.name.capitalize));
               }).toList(),
               onChanged: (value) {
-                LocalStorage.prefs.setString("theme", value?.name ?? "light");
                 setState(() {
-                  LocalStorage.settings = Appsettings.load(LocalStorage.prefs);
-                  LocalStorage.settingsNotifier.value = LocalStorage.settings;
+                  LocalStorage.settings.brightness = value!;
+                  LocalStorage.settings.save(LocalStorage.prefs);
                 });
               },
             ),
           ),
           ListTile(
             title: const Text("App color"),
-            trailing: ElevatedButton(onPressed: () => openColorPicker(context), child: const Text("Chang app color"))
+              trailing: ElevatedButton(
+                  onPressed: () => openColorPicker(context),
+                  child: const Text("Change app color"))
           ),
           SwitchListTile(
               title: const Text("Use dynamic colors"),
               value: LocalStorage.settings.useDynamicColors,
               onChanged: (value) {
-                LocalStorage.prefs.setBool("dynamic_colors", value);
                 setState(() {
-                  LocalStorage.settings = Appsettings.load(LocalStorage.prefs);
-                  LocalStorage.settingsNotifier.value = LocalStorage.settings;
+                  LocalStorage.settings.useDynamicColors = value;
+                  LocalStorage.settings.save(LocalStorage.prefs);
                 });
               }
           ),

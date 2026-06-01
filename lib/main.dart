@@ -20,7 +20,7 @@ class TotpApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Appsettings>(
+    return ValueListenableBuilder<AppSettings>(
       valueListenable: LocalStorage.settingsNotifier,
       builder: (context, settings, child) {
         return DynamicColorBuilder(

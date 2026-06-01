@@ -4,13 +4,13 @@ import 'package:totp_app/classes/appsettings.dart';
 
 class LocalStorage {
   static late final SharedPreferences prefs;
-  static late Appsettings settings;
+  static late AppSettings settings;
 
-  static late final ValueNotifier<Appsettings> settingsNotifier;
+  static late final ValueNotifier<AppSettings> settingsNotifier;
 
   static Future<void> init() async {
     prefs = await SharedPreferences.getInstance();
-    settings = Appsettings.load(prefs);
+    settings = AppSettings.load(prefs);
     settingsNotifier = ValueNotifier(settings);
   }
 }
