@@ -13,6 +13,8 @@ Future<void> main() async {
   runApp(TotpApp());
 }
 class TotpApp extends StatelessWidget {
+  const TotpApp({super.key});
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -25,7 +27,7 @@ class TotpApp extends StatelessWidget {
             useSystemColors: true,
             useMaterial3: true,
             colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.deepPurple,
+                seedColor: LocalStorage.settings.color,
                 brightness: settings.brightness
             )
           ),
