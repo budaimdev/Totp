@@ -7,7 +7,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:totp_app/helpers/local_storage.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-const String GITHUB_URL = "https://github.com/budaimdev/totp";
+const String githubUrl = "https://github.com/budaimdev/totp";
 
 class Settings extends StatefulWidget {
   const Settings({super.key});
@@ -182,29 +182,31 @@ class _SettingsState extends State<Settings> {
           ListTile(
               trailing:
               IconButton.outlined(onPressed: () async {
-                final Uri url = Uri.parse(GITHUB_URL);
+                final Uri url = Uri.parse(githubUrl);
 
                 if (await canLaunchUrl(url)) {
                   await launchUrl(url, mode: LaunchMode.externalApplication);
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Nepodařilo se otevřít GitHub.'),
-                      backgroundColor: Colors.redAccent,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Nepodařilo se otevřít GitHub.'),
+                        backgroundColor: Colors.redAccent,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        duration: const Duration(seconds: 3),
+                        action: SnackBarAction(
+                          label: 'Zavřít',
+                          textColor: Colors.white,
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          },
+                        ),
                       ),
-                      duration: const Duration(seconds: 3),
-                      action: SnackBarAction(
-                        label: 'Zavřít',
-                        textColor: Colors.white,
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                        },
-                      ),
-                    ),
-                  );
+                    );
+                  }
                 }
               }, icon: Icon(Icons.code))
           )
