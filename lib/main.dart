@@ -45,7 +45,8 @@ class TotpApp extends StatelessWidget {
                 ),
                 darkTheme: ThemeData(
                     useMaterial3: true,
-                    colorScheme: darkColorScheme
+                    colorScheme: settings.useForAmoled ? darkColorScheme
+                        .copyWith(surface: Colors.black) : darkColorScheme
                 ),
                 home: const NavigationStuff(),
                 themeMode: settings.brightness == Brightness.light ? ThemeMode

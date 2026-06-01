@@ -78,7 +78,8 @@ class _SettingsState extends State<Settings> {
             title: const Text("App color"),
               trailing: ElevatedButton(
                   onPressed: () => openColorPicker(context),
-                  child: const Text("Change app color"))
+                  child: const Text("Change app color")
+              )
           ),
           SwitchListTile(
               title: const Text("Use dynamic colors"),
@@ -90,6 +91,18 @@ class _SettingsState extends State<Settings> {
                 });
               }
           ),
+          SwitchListTile(
+              title: const Text("Mode for AMOLED displays"),
+              value: LocalStorage.settings.useForAmoled,
+              onChanged: LocalStorage.settings.brightness == Brightness.light
+                  ? null
+                  : (value) {
+                setState(() {
+                  LocalStorage.settings.useForAmoled = value;
+                  LocalStorage.settings.save(LocalStorage.prefs);
+                });
+              }
+          )
         ],
         )
     );
