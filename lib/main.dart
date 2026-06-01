@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:totp_app/helpers/database.dart';
+import 'package:totp_app/helpers/local_storage.dart';
 import 'package:totp_app/screens/add.dart';
 import 'package:totp_app/screens/home.dart';
 import 'package:totp_app/screens/settings.dart';
@@ -8,31 +8,30 @@ import 'package:totp_app/screens/settings.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseWrapper().initDatabase();
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await LocalStorage.init();
 
-  runApp(TotpApp(prefs: prefs,));
+  runApp(TotpApp());
 }
-
 class TotpApp extends StatelessWidget {
-  final SharedPreferences prefs;
-  const TotpApp({super.key, required this.prefs});
-
-
-
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TOTP',
-      theme: ThemeData(
-        useSystemColors: true,
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.purple,
-          brightness: Brightness.dark
-        )
-      ),
-      home: const NavigationStuff(),
+    return ValueListenableBuilder(
+      valueListenable: LocalStorage.settingsNotifier,
+      builder: (context, settings, child) {
+        return MaterialApp(
+          title: 'TOTP',
+          theme: ThemeData(
+            useSystemColors: true,
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.deepPurple,
+                brightness: settings.brightness
+            )
+          ),
+          home: const NavigationStuff(),
+        );
+      }
     );
   }
 }
@@ -53,7 +52,7 @@ class Sidebar extends StatelessWidget {
                 Navigator.pop(context);
                 Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (context) => const Settings(),
+                      builder: (context) => Settings(),
                     )
                 );
               }
