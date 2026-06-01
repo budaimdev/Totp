@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:totp_app/helpers/local_storage.dart';
@@ -41,71 +43,73 @@ class _SettingsState extends State<Settings> {
       ),
     );
 
-    if (newColor != LocalStorage.settings.color) {
+    if (!mounted) return;
+
+    if (newColor != LocalStorage.settingsNotifier.value.color) {
       setState(() {
         LocalStorage.settings.color = newColor;
-        LocalStorage.settings.save(LocalStorage.prefs);
       });
+      await LocalStorage.settings.save(LocalStorage.prefs);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Settings"),
-      ),
-        body: ListView(
+      appBar: AppBar(title: const Text("Settings")),
+      body: ListView(
         children: [
           ListTile(
             title: const Text("Theme"),
             trailing: DropdownButton(
               value: LocalStorage.settings.brightness,
               items: Brightness.values.map<DropdownMenuItem<Brightness>>((
-                  Brightness value) {
+                  Brightness value,) {
                 return DropdownMenuItem(
-                    value: value, child: Text(value.name.capitalize));
+                  value: value,
+                  child: Text(value.name
+                      .capitalize), //Provided by package:flex_color_picker/src/color_picker_extensions.dart
+                );
               }).toList(),
-              onChanged: (value) {
+              onChanged: (value) async {
                 setState(() {
                   LocalStorage.settings.brightness = value!;
-                  LocalStorage.settings.save(LocalStorage.prefs);
                 });
+                await LocalStorage.settings.save(LocalStorage.prefs);
               },
             ),
           ),
           ListTile(
             title: const Text("App color"),
-              trailing: ElevatedButton(
-                  onPressed: () => openColorPicker(context),
-                  child: const Text("Change app color")
-              )
+            trailing: ElevatedButton(
+              onPressed: () => openColorPicker(context),
+              child: const Text("Change app color"),
+            ),
           ),
           SwitchListTile(
-              title: const Text("Use dynamic colors"),
-              value: LocalStorage.settings.useDynamicColors,
-              onChanged: (value) {
-                setState(() {
-                  LocalStorage.settings.useDynamicColors = value;
-                  LocalStorage.settings.save(LocalStorage.prefs);
-                });
-              }
+            title: const Text("Use dynamic colors"),
+            value: LocalStorage.settings.useDynamicColors,
+            onChanged: (value) async {
+              setState(() {
+                LocalStorage.settings.useDynamicColors = value;
+              });
+              await LocalStorage.settings.save(LocalStorage.prefs);
+            },
           ),
           SwitchListTile(
-              title: const Text("Mode for AMOLED displays"),
-              value: LocalStorage.settings.useForAmoled,
-              onChanged: LocalStorage.settings.brightness == Brightness.light
-                  ? null
-                  : (value) {
-                setState(() {
-                  LocalStorage.settings.useForAmoled = value;
-                  LocalStorage.settings.save(LocalStorage.prefs);
-                });
-              }
-          )
+            title: const Text("Mode for AMOLED displays"),
+            value: LocalStorage.settings.useForAmoled,
+            onChanged: LocalStorage.settings.brightness == Brightness.light
+                ? null
+                : (value) async {
+              setState(() {
+                LocalStorage.settings.useForAmoled = value;
+              });
+              await LocalStorage.settings.save(LocalStorage.prefs);
+            },
+          ),
         ],
-        )
+      ),
     );
   }
 }
-
