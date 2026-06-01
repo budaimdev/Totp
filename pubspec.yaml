@@ -41,6 +41,7 @@ dependencies:
   totp: ^0.1.0
   shared_preferences: ^2.5.5
   flex_color_picker: ^3.8.0
+  dynamic_color: ^1.8.1
 
 dev_dependencies:
   flutter_test:

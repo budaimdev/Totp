@@ -80,7 +80,18 @@ class _SettingsState extends State<Settings> {
           ListTile(
             title: const Text("App color"),
             trailing: ElevatedButton(onPressed: () => openColorPicker(context), child: const Text("Chang app color"))
-          )
+          ),
+          SwitchListTile(
+              title: const Text("Use dynamic colors"),
+              value: LocalStorage.settings.useDynamicColors,
+              onChanged: (value) {
+                LocalStorage.prefs.setBool("dynamic_colors", value);
+                setState(() {
+                  LocalStorage.settings = Appsettings.load(LocalStorage.prefs);
+                  LocalStorage.settingsNotifier.value = LocalStorage.settings;
+                });
+              }
+          ),
         ],
         )
     );

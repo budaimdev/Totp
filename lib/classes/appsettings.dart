@@ -1,13 +1,13 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Appsettings {
   final Brightness brightness;
   final Color color;
+  final bool useDynamicColors;
 
-  Appsettings({required this.brightness, required this.color});
+  Appsettings(
+      {required this.brightness, required this.color, required this.useDynamicColors});
 
   factory Appsettings.load(SharedPreferences prefs) {
     final String theme = prefs.getString("theme") ?? "system";
@@ -16,7 +16,8 @@ class Appsettings {
 
     return Appsettings(
       brightness: Brightness.values.byName(theme == "system" ? "light" : theme),
-      color: color
+        color: color,
+        useDynamicColors: prefs.getBool("dynamic_colors") ?? false
     );
   }
 
