@@ -1,5 +1,8 @@
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
+import 'package:totp_app/classes/appsettings.dart';
 import 'package:totp_app/helpers/database.dart';
+import 'package:totp_app/helpers/local_storage.dart';
 import 'package:totp_app/screens/add.dart';
 import 'package:totp_app/screens/home.dart';
 import 'package:totp_app/screens/settings.dart';
@@ -7,22 +10,51 @@ import 'package:totp_app/screens/settings.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseWrapper().initDatabase();
+  await LocalStorage.init();
 
-  runApp(const TotpApp());
+  runApp(TotpApp());
 }
-
 class TotpApp extends StatelessWidget {
   const TotpApp({super.key});
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TOTP',
-      theme: ThemeData(
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const NavigationStuff(),
+    return ValueListenableBuilder<AppSettings>(
+      valueListenable: LocalStorage.settingsNotifier,
+      builder: (context, settings, child) {
+        return DynamicColorBuilder(
+            builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+              final ColorScheme lightColorScheme = settings.useDynamicColors &&
+                  lightDynamic != null
+                  ? lightDynamic
+                  : ColorScheme.fromSeed(
+                  brightness: Brightness.light, seedColor: settings.color);
+
+              final ColorScheme darkColorScheme = settings.useDynamicColors &&
+                  darkDynamic != null
+                  ? darkDynamic
+                  : ColorScheme.fromSeed(
+                  brightness: Brightness.dark, seedColor: settings.color);
+
+              return MaterialApp(
+                title: 'TOTP',
+                theme: ThemeData(
+                    useMaterial3: true,
+                    colorScheme: lightColorScheme
+                ),
+                darkTheme: ThemeData(
+                    useMaterial3: true,
+                    colorScheme: settings.useForAmoled ? darkColorScheme
+                        .copyWith(surface: Colors.black) : darkColorScheme
+                ),
+                home: const NavigationStuff(),
+                themeMode: settings.brightness == Brightness.light ? ThemeMode
+                    .light : ThemeMode.dark,
+              );
+            }
+        );
+      }
     );
   }
 }
@@ -43,7 +75,7 @@ class Sidebar extends StatelessWidget {
                 Navigator.pop(context);
                 Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (context) => const Settings(),
+                      builder: (context) => Settings(),
                     )
                 );
               }
