@@ -28,6 +28,8 @@ class TotpApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    LocalStorage.settings.brightness = MediaQuery.platformBrightnessOf(context);
+
     return ValueListenableBuilder<AppSettings>(
       valueListenable: LocalStorage.settingsNotifier,
       builder: (context, settings, child) {
@@ -105,7 +107,8 @@ class NavigationStuff extends StatefulWidget {
 
 class _NavigationStuffState extends State<NavigationStuff> {
   final GlobalKey<HomeState> _homeKey = GlobalKey<HomeState>();
-  bool _isLocked = true;
+  bool _isLocked = LocalStorage.settings.canUseBio &&
+      LocalStorage.settings.useBio;
 
   @override
   void initState() {

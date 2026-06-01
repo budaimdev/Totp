@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:totp_app/helpers/local_storage.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+const String GITHUB_URL = "https://github.com/budaimdev/totp";
 
 class Settings extends StatefulWidget {
   const Settings({super.key});
@@ -97,6 +100,7 @@ class _SettingsState extends State<Settings> {
       body: ListView(
         children: [
           ListTile(
+            leading: Icon(Icons.palette),
             title: const Text("Theme"),
             trailing: DropdownButton(
               value: LocalStorage.settings.brightness,
@@ -117,6 +121,7 @@ class _SettingsState extends State<Settings> {
             ),
           ),
           ListTile(
+            leading: Icon(Icons.colorize),
             title: const Text("App color"),
             trailing: ElevatedButton(
               onPressed: () => openColorPicker(context),
@@ -125,6 +130,7 @@ class _SettingsState extends State<Settings> {
           ),
           SwitchListTile(
             title: const Text("Use dynamic colors"),
+            secondary: Icon(Icons.auto_awesome),
             value: LocalStorage.settings.useDynamicColors,
             onChanged: (value) async {
               setState(() {
@@ -135,6 +141,7 @@ class _SettingsState extends State<Settings> {
           ),
           SwitchListTile(
             title: const Text("Mode for AMOLED displays"),
+            secondary: Icon(Icons.phone_android),
             value: LocalStorage.settings.useForAmoled,
             onChanged: LocalStorage.settings.brightness == Brightness.light
                 ? null
@@ -147,6 +154,7 @@ class _SettingsState extends State<Settings> {
           ),
           SwitchListTile(
               title: const Text("Enable authentication"),
+              secondary: Icon(Icons.lock),
               value: LocalStorage.settings.useBio,
               onChanged: !LocalStorage.settings.canUseBio ? null : (
                   value) async {
@@ -164,6 +172,41 @@ class _SettingsState extends State<Settings> {
                   await LocalStorage.settings.save(LocalStorage.prefs);
                 }
               }
+          ),
+          ListTile(
+            trailing: Text("© ${DateTime
+                .now()
+                .year} Michal Budai (budaimdev)",
+              style: TextStyle(fontSize: 10),),
+          ),
+          ListTile(
+              trailing:
+              IconButton.outlined(onPressed: () async {
+                final Uri url = Uri.parse(GITHUB_URL);
+
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Nepodařilo se otevřít GitHub.'),
+                      backgroundColor: Colors.redAccent,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      duration: const Duration(seconds: 3),
+                      action: SnackBarAction(
+                        label: 'Zavřít',
+                        textColor: Colors.white,
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        },
+                      ),
+                    ),
+                  );
+                }
+              }, icon: Icon(Icons.code))
           )
         ],
       ),
