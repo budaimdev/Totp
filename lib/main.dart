@@ -1,5 +1,6 @@
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:totp_app/classes/appsettings.dart';
 import 'package:totp_app/helpers/database.dart';
 import 'package:totp_app/helpers/local_storage.dart';
@@ -11,7 +12,13 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseWrapper().initDatabase();
   await LocalStorage.init();
-  //TODO: Check if I can authenticate
+  final LocalAuthentication auth = LocalAuthentication();
+
+  try {
+    LocalStorage.settings.canUseBio = await auth.canCheckBiometrics;
+  } catch (_) {
+    LocalStorage.settings.canUseBio = false;
+  }
 
   runApp(TotpApp());
 }
@@ -98,9 +105,62 @@ class NavigationStuff extends StatefulWidget {
 
 class _NavigationStuffState extends State<NavigationStuff> {
   final GlobalKey<HomeState> _homeKey = GlobalKey<HomeState>();
+  bool _isLocked = true;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isLocked) {
+      _checkLock();
+    }
+  }
+
+  Future<void> _checkLock() async {
+    if (LocalStorage.settings.canUseBio && LocalStorage.settings.useBio) {
+      LocalAuthentication auth = LocalAuthentication();
+      try {
+        bool isAuthenticated = await auth.authenticate(
+            localizedReason: "You have to authenticate to access the contents of this app",
+            persistAcrossBackgrounding: true,
+            biometricOnly: true);
+
+        if (isAuthenticated && mounted) {
+          setState(() {
+            _isLocked = false;
+          });
+        } else {
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (mounted && _isLocked) _checkLock();
+        }
+      } catch (_) {
+        setState(() {
+          _isLocked = true;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLocked) {
+      return Scaffold(
+          backgroundColor: Colors.black,
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.lock_outline, size: 80, color: Colors.white),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: _checkLock,
+                  child: const Text("Unlock app"),
+                ),
+              ],
+            ),
+          )
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("TOTP"),

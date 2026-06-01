@@ -55,6 +55,25 @@ class _SettingsState extends State<Settings> {
     }
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _checkAuth();
+  }
+
+  Future<void> _checkAuth() async {
+    final LocalAuthentication auth = LocalAuthentication();
+    final canUseBio = await auth.canCheckBiometrics;
+    setState(() {
+      try {
+        LocalStorage.settings.canUseBio = canUseBio;
+      } catch (_) {
+        LocalStorage.settings.canUseBio = false;
+      }
+    });
+    await LocalStorage.settings.save(LocalStorage.prefs);
+  }
+
   Future<bool> setupAuth() async {
     final LocalAuthentication auth = LocalAuthentication();
     final canUseBio = await auth.canCheckBiometrics;
@@ -129,7 +148,7 @@ class _SettingsState extends State<Settings> {
           SwitchListTile(
               title: const Text("Enable authentication"),
               value: LocalStorage.settings.useBio,
-              onChanged: /*!LocalStorage.settings.canUseBio ? null :*/ (
+              onChanged: !LocalStorage.settings.canUseBio ? null : (
                   value) async {
                 if (value) {
                   if (await setupAuth()) {
