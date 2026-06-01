@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:totp_app/helpers/database.dart';
 import 'package:totp_app/screens/add.dart';
 import 'package:totp_app/screens/home.dart';
@@ -7,12 +8,16 @@ import 'package:totp_app/screens/settings.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseWrapper().initDatabase();
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  runApp(const TotpApp());
+  runApp(TotpApp(prefs: prefs,));
 }
 
 class TotpApp extends StatelessWidget {
-  const TotpApp({super.key});
+  final SharedPreferences prefs;
+  const TotpApp({super.key, required this.prefs});
+
+
 
   // This widget is the root of your application.
   @override
@@ -20,7 +25,12 @@ class TotpApp extends StatelessWidget {
     return MaterialApp(
       title: 'TOTP',
       theme: ThemeData(
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        useSystemColors: true,
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.purple,
+          brightness: Brightness.dark
+        )
       ),
       home: const NavigationStuff(),
     );

@@ -9,6 +9,18 @@ class Settings extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Settings"),
       ),
+      body: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                  child: const Text("Theme")
+              ),
+
+            ],
+          )
+        ],
+      ),
     );
   }
 }
