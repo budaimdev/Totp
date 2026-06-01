@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:totp_app/helpers/local_storage.dart';
 
 class Settings extends StatefulWidget {
@@ -50,6 +52,23 @@ class _SettingsState extends State<Settings> {
         LocalStorage.settings.color = newColor;
       });
       await LocalStorage.settings.save(LocalStorage.prefs);
+    }
+  }
+
+  Future<bool> setupAuth() async {
+    final LocalAuthentication auth = LocalAuthentication();
+    final canUseBio = await auth.canCheckBiometrics;
+    if (!canUseBio) return false;
+
+    try {
+      return await auth.authenticate(
+          localizedReason: "You need to verify yourself to enable auth.",
+          persistAcrossBackgrounding: true,
+          biometricOnly: true
+      );
+    } on PlatformException catch (e) {
+      print(e);
+      return false;
     }
   }
 
@@ -108,6 +127,26 @@ class _SettingsState extends State<Settings> {
               await LocalStorage.settings.save(LocalStorage.prefs);
             },
           ),
+          SwitchListTile(
+              title: const Text("Enable authentication"),
+              value: LocalStorage.settings.useBio,
+              onChanged: /*!LocalStorage.settings.canUseBio ? null :*/ (
+                  value) async {
+                if (value) {
+                  if (await setupAuth()) {
+                    setState(() {
+                      LocalStorage.settings.useBio = true;
+                    });
+                    await LocalStorage.settings.save(LocalStorage.prefs);
+                  }
+                } else {
+                  setState(() {
+                    LocalStorage.settings.useBio = false;
+                  });
+                  await LocalStorage.settings.save(LocalStorage.prefs);
+                }
+              }
+          )
         ],
       ),
     );

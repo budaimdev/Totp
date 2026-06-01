@@ -11,6 +11,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseWrapper().initDatabase();
   await LocalStorage.init();
+  //TODO: Check if I can authenticate
 
   runApp(TotpApp());
 }

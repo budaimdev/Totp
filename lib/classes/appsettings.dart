@@ -7,21 +7,27 @@ class AppSettings {
   Color color;
   bool useDynamicColors;
   bool useForAmoled;
+  bool canUseBio;
+  bool useBio;
 
   AppSettings(
-      {required this.brightness, required this.color, required this.useDynamicColors, required this.useForAmoled});
+      {required this.brightness, required this.color, required this.useDynamicColors, required this.useForAmoled, this.canUseBio = false, required this.useBio});
 
   factory AppSettings.load(SharedPreferences prefs) {
     final String theme = prefs.getString("theme") ?? "light";
     final int? colorValue = prefs.getInt("app_color");
     final Color color = colorValue != null ? Color(colorValue) : Colors.deepPurple;
     final bool amoled = prefs.getBool("amoled") ?? false;
+    final bool canUse = prefs.getBool("can_use_bio") ?? false;
+    final bool use = prefs.getBool("use_bio") ?? false;
 
     return AppSettings(
         brightness: theme == "dark" ? Brightness.dark : Brightness.light,
         color: color,
         useDynamicColors: prefs.getBool("dynamic_colors") ?? false,
-        useForAmoled: amoled
+        useForAmoled: amoled,
+        canUseBio: canUse,
+        useBio: use
     );
   }
 
@@ -30,6 +36,8 @@ class AppSettings {
     await prefs.setBool('dynamic_colors', useDynamicColors);
     await prefs.setInt('app_color', color.toARGB32());
     await prefs.setBool("amoled", useForAmoled);
+    await prefs.setBool("can_use_bio", canUseBio);
+    await prefs.setBool("use_bio", useBio);
 
     LocalStorage.settingsNotifier.value = AppSettings.load(LocalStorage.prefs);
   }
