@@ -137,7 +137,7 @@ class HomeState extends State<Home> {
           } else if (snapshot.hasError) {
             return const Text("Error while loading data");
           } else {
-            return const CircularProgressIndicator();
+            return Center(child: const CircularProgressIndicator());
           }
         }
     );
