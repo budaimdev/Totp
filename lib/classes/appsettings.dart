@@ -39,6 +39,7 @@ class AppSettings {
     await prefs.setBool("can_use_bio", canUseBio);
     await prefs.setBool("use_bio", useBio);
 
-    LocalStorage.settingsNotifier.value = AppSettings.load(LocalStorage.prefs);
+    LocalStorage.settings = AppSettings.load(LocalStorage.prefs);
+    LocalStorage.settingsNotifier.value = LocalStorage.settings;
   }
 }

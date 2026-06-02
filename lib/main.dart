@@ -28,8 +28,6 @@ class TotpApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    LocalStorage.settings.brightness = MediaQuery.platformBrightnessOf(context);
-
     return ValueListenableBuilder<AppSettings>(
       valueListenable: LocalStorage.settingsNotifier,
       builder: (context, settings, child) {
@@ -131,11 +129,9 @@ class _NavigationStuffState extends State<NavigationStuff> {
           setState(() {
             _isLocked = false;
           });
-        } else {
-          await Future.delayed(const Duration(milliseconds: 500));
-          if (mounted && _isLocked) _checkLock();
         }
       } catch (_) {
+        if (!mounted) return;
         setState(() {
           _isLocked = true;
         });

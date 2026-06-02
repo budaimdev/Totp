@@ -66,13 +66,16 @@ class _SettingsState extends State<Settings> {
 
   Future<void> _checkAuth() async {
     final LocalAuthentication auth = LocalAuthentication();
-    final canUseBio = await auth.canCheckBiometrics;
+    bool canUseBio;
+    try {
+      canUseBio = await auth.canCheckBiometrics;
+    } on PlatformException catch (_) {
+      canUseBio = false;
+    }
+
+    if (!mounted) return;
     setState(() {
-      try {
-        LocalStorage.settings.canUseBio = canUseBio;
-      } catch (_) {
-        LocalStorage.settings.canUseBio = false;
-      }
+      LocalStorage.settings.canUseBio = canUseBio;
     });
     await LocalStorage.settings.save(LocalStorage.prefs);
   }
@@ -190,7 +193,7 @@ class _SettingsState extends State<Settings> {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text('Nepodařilo se otevřít GitHub.'),
+                        content: const Text('Failed to open GitHub.'),
                         backgroundColor: Colors.redAccent,
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(
@@ -198,7 +201,7 @@ class _SettingsState extends State<Settings> {
                         ),
                         duration: const Duration(seconds: 3),
                         action: SnackBarAction(
-                          label: 'Zavřít',
+                          label: 'Close',
                           textColor: Colors.white,
                           onPressed: () {
                             ScaffoldMessenger.of(context).hideCurrentSnackBar();
