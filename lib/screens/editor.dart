@@ -4,14 +4,16 @@ import 'package:totp_app/classes/totp_class.dart';
 import 'package:totp_app/helpers/database.dart';
 import 'package:totp_app/screens/scanner.dart';
 
-class Add extends StatefulWidget {
-  const Add({super.key});
+class Editor extends StatefulWidget {
+  final int? totpClassId;
+
+  const Editor({super.key, this.totpClassId});
 
   @override
-  State<StatefulWidget> createState() => _Add();
+  State<StatefulWidget> createState() => _Editor();
 }
 
-class _Add extends State<Add> {
+class _Editor extends State<Editor> {
   final TextEditingController label = TextEditingController();
   final TextEditingController issuer = TextEditingController();
   final TextEditingController secret = TextEditingController();
@@ -20,6 +22,7 @@ class _Add extends State<Add> {
   String rawValue = "";
   String? _errorText;
   bool _isSavingDisabled = true;
+  int? id;
 
 
   @override
@@ -30,6 +33,24 @@ class _Add extends State<Add> {
     secret.addListener(_validateForm);
     digits.addListener(_validateForm);
     period.addListener(_validateForm);
+
+    if (widget.totpClassId != null) {
+      _getTotpInfo();
+    }
+  }
+
+  void _getTotpInfo() async {
+    DatabaseWrapper databaseWrapper = DatabaseWrapper();
+    TotpClass totp = await databaseWrapper.getOneTotp(widget.totpClassId!);
+
+    setState(() {
+      id = totp.id;
+      label.text = totp.label;
+      issuer.text = totp.issuer;
+      secret.text = totp.secret;
+      digits.text = totp.digits.toString();
+      period.text = totp.period.toString();
+    });
   }
 
   void _processScannedQr() {
@@ -78,6 +99,24 @@ class _Add extends State<Add> {
     }
   }
 
+  void save() async {
+    final db = DatabaseWrapper();
+    TotpClass newTotp = TotpClass(
+        id: id,
+        issuer: issuer.text,
+        secret: secret.text,
+        label: label.text,
+        digits: int.tryParse(digits.text) ?? 6,
+        period: int.tryParse(period.text) ?? 30
+    );
+
+    id = await db.addOrUpdateTotp(newTotp);
+
+    if (mounted) {
+      Navigator.of(context).pop(id);
+    }
+  }
+
   @override
   void dispose() {
     label.dispose();
@@ -92,25 +131,14 @@ class _Add extends State<Add> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Add new TOTP"),
+        title: id == null ? const Text("Add new TOTP") : const Text(
+            "Edit totp"),
         actions: [
           IconButton(
             onPressed: _isSavingDisabled ? null : () async {
-              final db = DatabaseWrapper();
-              TotpClass newTotp = TotpClass(
-                  issuer: issuer.text,
-                  secret: secret.text,
-                  label: label.text,
-                  digits: int.tryParse(digits.text) ?? 6,
-                  period: int.tryParse(period.text) ?? 30
-              );
-              int id = await db.addTotp(newTotp);
-              if (context.mounted) {
-                Navigator.of(context).pop(id);
-              }
+              save();
             },
             icon: Icon(Icons.save),
-
           )
         ],
       ),

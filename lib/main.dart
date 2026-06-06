@@ -5,7 +5,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:totp_app/classes/appsettings.dart';
 import 'package:totp_app/helpers/database.dart';
 import 'package:totp_app/helpers/local_storage.dart';
-import 'package:totp_app/screens/add.dart';
+import 'package:totp_app/screens/editor.dart';
 import 'package:totp_app/screens/home.dart';
 import 'package:totp_app/screens/settings.dart';
 
@@ -130,6 +130,17 @@ class _NavigationStuffState extends State<NavigationStuff> {
     super.dispose();
   }
 
+  void delete() async {
+    DatabaseWrapper db = DatabaseWrapper();
+    if (selectedIdNotifier.value.isNotEmpty) {
+      for (var id in selectedIdNotifier.value) {
+        await db.removeTotp(id!);
+      }
+      selectedIdNotifier.value = [];
+      _homeKey.currentState?.refresh();
+    }
+  }
+
   Future<void> _checkLock() async {
     if (LocalStorage.settings.canUseBio && LocalStorage.settings.useBio) {
       LocalAuthentication auth = LocalAuthentication();
@@ -183,7 +194,7 @@ class _NavigationStuffState extends State<NavigationStuff> {
           appBar: AppBar(
             title: selectedIdNotifier.value.isEmpty
                 ? const Text("Totp")
-                : const Text("Editing"),
+                : Text("Selected ${selectedIdNotifier.value.length}"),
             leading: value.isEmpty
                 ? null
                 : IconButton(
@@ -203,10 +214,61 @@ class _NavigationStuffState extends State<NavigationStuff> {
                   itemBuilder: (BuildContext context) =>
                       <PopupMenuEntry<Actions>>[
                         PopupMenuItem<Actions>(
-                          child: Text(Actions.edit.name.capitalize),
+                          child: TextButton(
+                            onPressed: selectedIdNotifier.value.length > 1
+                                ? null
+                                : () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (BuildContext context) =>
+                                      Editor(
+                                          totpClassId: selectedIdNotifier.value
+                                              .first)));
+                              _homeKey.currentState?.refresh();
+                            },
+                            child: Text(Actions.edit.name.capitalize),
+                          ),
                         ),
                         PopupMenuItem<Actions>(
-                          child: Text(Actions.delete.name.capitalize),
+                          child: TextButton(
+                            child: Text(Actions.delete.name.capitalize),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: const Text("Delete TOTP?"),
+                                    content: Text(
+                                        "Do you really want to permanently delete ${selectedIdNotifier
+                                            .value.length} TOTP(s)?"),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: const Text("Cancel"),
+                                      ),
+                                      FilledButton(
+                                        onPressed: () {
+                                          delete();
+                                          Navigator.of(context).pop();
+                                        },
+                                        style: ButtonStyle(
+                                            backgroundColor: WidgetStateProperty
+                                                .all(Colors.red)
+                                        ),
+                                        child: Text("Delete",
+                                          style: TextStyle(color: Theme
+                                              .of(context)
+                                              .colorScheme
+                                              .primary),),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                          ),
                         ),
                       ],
                 ),
@@ -216,9 +278,10 @@ class _NavigationStuffState extends State<NavigationStuff> {
           body: Home(key: _homeKey, selectedIdNotifier: selectedIdNotifier),
           floatingActionButton: FloatingActionButton(
             onPressed: () async {
+              selectedIdNotifier.value = [];
               final int? newId = await Navigator.of(
                 context,
-              ).push(MaterialPageRoute(builder: (context) => const Add()));
+              ).push(MaterialPageRoute(builder: (context) => const Editor()));
 
               if (newId != null) {
                 _homeKey.currentState?.refresh();

@@ -47,7 +47,7 @@ class DatabaseWrapper {
     );
   }
 
-  Future<int> addTotp(TotpClass totp) async {
+  Future<int> addOrUpdateTotp(TotpClass totp) async {
     if (_database == null) {
       throw Exception();
     }
