@@ -4,7 +4,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:totp_app/classes/appsettings.dart';
 import 'package:totp_app/helpers/database.dart';
 import 'package:totp_app/helpers/local_storage.dart';
-import 'package:totp_app/screens/add.dart';
+import 'package:totp_app/screens/editor.dart';
 import 'package:totp_app/screens/home.dart';
 import 'package:totp_app/screens/settings.dart';
 
@@ -22,6 +22,9 @@ Future<void> main() async {
 
   runApp(TotpApp());
 }
+
+enum Actions { edit, delete }
+
 class TotpApp extends StatelessWidget {
   const TotpApp({super.key});
 
@@ -32,37 +35,43 @@ class TotpApp extends StatelessWidget {
       valueListenable: LocalStorage.settingsNotifier,
       builder: (context, settings, child) {
         return DynamicColorBuilder(
-            builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-              final ColorScheme lightColorScheme = settings.useDynamicColors &&
-                  lightDynamic != null
-                  ? lightDynamic
-                  : ColorScheme.fromSeed(
-                  brightness: Brightness.light, seedColor: settings.color);
+          builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+            final ColorScheme lightColorScheme =
+                settings.useDynamicColors && lightDynamic != null
+                ? lightDynamic
+                : ColorScheme.fromSeed(
+                    brightness: Brightness.light,
+                    seedColor: settings.color,
+                  );
 
-              final ColorScheme darkColorScheme = settings.useDynamicColors &&
-                  darkDynamic != null
-                  ? darkDynamic
-                  : ColorScheme.fromSeed(
-                  brightness: Brightness.dark, seedColor: settings.color);
+            final ColorScheme darkColorScheme =
+                settings.useDynamicColors && darkDynamic != null
+                ? darkDynamic
+                : ColorScheme.fromSeed(
+                    brightness: Brightness.dark,
+                    seedColor: settings.color,
+                  );
 
-              return MaterialApp(
-                title: 'TOTP',
-                theme: ThemeData(
-                    useMaterial3: true,
-                    colorScheme: lightColorScheme
-                ),
-                darkTheme: ThemeData(
-                    useMaterial3: true,
-                    colorScheme: settings.useForAmoled ? darkColorScheme
-                        .copyWith(surface: Colors.black) : darkColorScheme
-                ),
-                home: const NavigationStuff(),
-                themeMode: settings.brightness == Brightness.light ? ThemeMode
-                    .light : ThemeMode.dark,
-              );
-            }
+            return MaterialApp(
+              title: 'TOTP',
+              theme: ThemeData(
+                useMaterial3: true,
+                colorScheme: lightColorScheme,
+              ),
+              darkTheme: ThemeData(
+                useMaterial3: true,
+                colorScheme: settings.useForAmoled
+                    ? darkColorScheme.copyWith(surface: Colors.black)
+                    : darkColorScheme,
+              ),
+              home: const NavigationStuff(),
+              themeMode: settings.brightness == Brightness.light
+                  ? ThemeMode.light
+                  : ThemeMode.dark,
+            );
+          },
         );
-      }
+      },
     );
   }
 }
@@ -79,20 +88,17 @@ class Sidebar extends StatelessWidget {
           ListTile(
             leading: Icon(Icons.settings),
             title: const Text("Settings"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (context) => Settings(),
-                    )
-                );
-              }
-          )
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute<void>(builder: (context) => Settings()));
+            },
+          ),
         ],
       ),
     );
   }
-
 }
 
 class NavigationStuff extends StatefulWidget {
@@ -100,13 +106,14 @@ class NavigationStuff extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() => _NavigationStuffState();
-
 }
 
 class _NavigationStuffState extends State<NavigationStuff> {
   final GlobalKey<HomeState> _homeKey = GlobalKey<HomeState>();
-  bool _isLocked = LocalStorage.settings.canUseBio &&
-      LocalStorage.settings.useBio;
+  bool _isLocked =
+      LocalStorage.settings.canUseBio && LocalStorage.settings.useBio;
+  final ValueNotifier<List<int?>> selectedIdNotifier =
+      ValueNotifier<List<int?>>([]);
 
   @override
   void initState() {
@@ -116,14 +123,33 @@ class _NavigationStuffState extends State<NavigationStuff> {
     }
   }
 
+  @override
+  void dispose() {
+    selectedIdNotifier.dispose();
+    super.dispose();
+  }
+
+  void delete() async {
+    DatabaseWrapper db = DatabaseWrapper();
+    if (selectedIdNotifier.value.isNotEmpty) {
+      for (var id in selectedIdNotifier.value) {
+        await db.removeTotp(id!);
+      }
+      selectedIdNotifier.value = [];
+      _homeKey.currentState?.refresh();
+    }
+  }
+
   Future<void> _checkLock() async {
     if (LocalStorage.settings.canUseBio && LocalStorage.settings.useBio) {
       LocalAuthentication auth = LocalAuthentication();
       try {
         bool isAuthenticated = await auth.authenticate(
-            localizedReason: "You have to authenticate to access the contents of this app",
-            persistAcrossBackgrounding: true,
-            biometricOnly: true);
+          localizedReason:
+              "You have to authenticate to access the contents of this app",
+          persistAcrossBackgrounding: true,
+          biometricOnly: true,
+        );
 
         if (isAuthenticated && mounted) {
           setState(() {
@@ -143,46 +169,125 @@ class _NavigationStuffState extends State<NavigationStuff> {
   Widget build(BuildContext context) {
     if (_isLocked) {
       return Scaffold(
-          backgroundColor: Colors.black,
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.lock_outline, size: 80, color: Colors.white),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _checkLock,
-                  child: const Text("Unlock app"),
-                ),
-              ],
-            ),
-          )
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_outline, size: 80, color: Colors.white),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _checkLock,
+                child: const Text("Unlock app"),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("TOTP"),
-        actions: [
-          IconButton(
-              onPressed: () => _homeKey.currentState?.refresh(),
-              icon: Icon(Icons.refresh))
-        ],
-      ),
-      drawer: Sidebar(),
-      body: Home(key: _homeKey,),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final int? newId = await Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const Add())
-          );
+    return ValueListenableBuilder(
+      valueListenable: selectedIdNotifier,
+      builder: (context, value, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: selectedIdNotifier.value.isEmpty
+                ? const Text("Totp")
+                : Text("Selected ${selectedIdNotifier.value.length}"),
+            leading: value.isEmpty
+                ? null
+                : IconButton(
+                    onPressed: () {
+                      selectedIdNotifier.value = [];
+                    },
+                    icon: Icon(Icons.arrow_back),
+                  ),
+            actions: [
+              if (selectedIdNotifier.value.isEmpty)
+                IconButton(
+                  onPressed: () => _homeKey.currentState?.refresh(),
+                  icon: Icon(Icons.refresh),
+                )
+              else
+                PopupMenuButton<Actions>(
+                  onSelected: (Actions action) async {
+                    if (action == Actions.edit) {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (BuildContext context) =>
+                              Editor(
+                                totpClassId: selectedIdNotifier.value.first,
+                              ),
+                        ),
+                      );
+                      selectedIdNotifier.value = [];
+                      _homeKey.currentState?.refresh();
+                    } else if (action == Actions.delete) {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text("Delete TOTP?"),
+                            content: Text(
+                              "Do you really want to permanently delete ${selectedIdNotifier
+                                  .value.length} TOTP(s)?",
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: const Text("Cancel"),
+                              ),
+                              FilledButton(
+                                onPressed: () {
+                                  delete();
+                                  Navigator.of(context).pop();
+                                },
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text("Delete"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    }
+                  },
+                  itemBuilder: (BuildContext context) =>
+                  <PopupMenuEntry<Actions>>[
+                    PopupMenuItem<Actions>(
+                      value: Actions.edit,
+                      enabled: selectedIdNotifier.value.length == 1,
+                      child: const Text("Edit"),
+                    ),
+                    PopupMenuItem<Actions>(
+                      value: Actions.delete,
+                      child: const Text("Delete"),
+                    ),
+                  ],
+                )
+            ],
+          ),
+          drawer: Sidebar(),
+          body: Home(key: _homeKey, selectedIdNotifier: selectedIdNotifier),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () async {
+              selectedIdNotifier.value = [];
+              final int? newId = await Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (context) => const Editor()));
 
-          if (newId != null) {
-            _homeKey.currentState?.refresh();
-          }
-        },
-        child: Icon(Icons.add),
-      ),
+              if (newId != null) {
+                _homeKey.currentState?.refresh();
+              }
+            },
+            child: Icon(Icons.add),
+          ),
+        );
+      },
     );
   }
 }

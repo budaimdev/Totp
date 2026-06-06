@@ -4,14 +4,16 @@ import 'package:totp_app/classes/totp_class.dart';
 import 'package:totp_app/helpers/database.dart';
 import 'package:totp_app/screens/scanner.dart';
 
-class Add extends StatefulWidget {
-  const Add({super.key});
+class Editor extends StatefulWidget {
+  final int? totpClassId;
+
+  const Editor({super.key, this.totpClassId});
 
   @override
-  State<StatefulWidget> createState() => _Add();
+  State<StatefulWidget> createState() => _Editor();
 }
 
-class _Add extends State<Add> {
+class _Editor extends State<Editor> {
   final TextEditingController label = TextEditingController();
   final TextEditingController issuer = TextEditingController();
   final TextEditingController secret = TextEditingController();
@@ -20,6 +22,10 @@ class _Add extends State<Add> {
   String rawValue = "";
   String? _errorText;
   bool _isSavingDisabled = true;
+  bool hideSecret = true;
+  int? id;
+  bool _isLoading = false;
+  String? _loadingError;
 
 
   @override
@@ -30,6 +36,40 @@ class _Add extends State<Add> {
     secret.addListener(_validateForm);
     digits.addListener(_validateForm);
     period.addListener(_validateForm);
+
+    if (widget.totpClassId != null) {
+      _getTotpInfo();
+    }
+  }
+
+  void _getTotpInfo() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      DatabaseWrapper databaseWrapper = DatabaseWrapper();
+      TotpClass totp = await databaseWrapper.getOneTotp(widget.totpClassId!);
+
+      if (!mounted) return;
+
+      setState(() {
+        id = totp.id;
+        label.text = totp.label;
+        issuer.text = totp.issuer;
+        secret.text = totp.secret;
+        digits.text = totp.digits.toString();
+        period.text = totp.period.toString();
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorText = "Failed to load data: $e";
+        });
+      }
+    }
   }
 
   void _processScannedQr() {
@@ -78,6 +118,33 @@ class _Add extends State<Add> {
     }
   }
 
+  void save() async {
+    try {
+      final db = DatabaseWrapper();
+      TotpClass newTotp = TotpClass(
+          id: id,
+          issuer: issuer.text,
+          secret: secret.text,
+          label: label.text,
+          digits: int.tryParse(digits.text) ?? 6,
+          period: int.tryParse(period.text) ?? 30
+      );
+
+      id = await db.addOrUpdateTotp(newTotp);
+
+      if (mounted) {
+        Navigator.of(context).pop(id);
+      }
+    } catch (e) {
+      _loadingError = e.toString();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed to save: $e"))
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     label.dispose();
@@ -92,29 +159,21 @@ class _Add extends State<Add> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Add new TOTP"),
+        title: widget.totpClassId == null
+            ? const Text("Add new TOTP")
+            : const Text(
+            "Edit totp"),
         actions: [
           IconButton(
             onPressed: _isSavingDisabled ? null : () async {
-              final db = DatabaseWrapper();
-              TotpClass newTotp = TotpClass(
-                  issuer: issuer.text,
-                  secret: secret.text,
-                  label: label.text,
-                  digits: int.tryParse(digits.text) ?? 6,
-                  period: int.tryParse(period.text) ?? 30
-              );
-              int id = await db.addTotp(newTotp);
-              if (context.mounted) {
-                Navigator.of(context).pop(id);
-              }
+              save();
             },
             icon: Icon(Icons.save),
-
           )
         ],
       ),
-      body: Padding(
+      body: _isLoading ? CircularProgressIndicator() : _loadingError == null
+          ? Padding(
         padding: const EdgeInsets.all(10.0),
         child: Column(
           spacing: 10.0,
@@ -142,9 +201,15 @@ class _Add extends State<Add> {
               keyboardType: TextInputType.visiblePassword,
               enableSuggestions: false,
               autocorrect: false,
-              obscureText: true,
+              obscureText: hideSecret,
               decoration: InputDecoration(
-                border: OutlineInputBorder(),
+                  border: OutlineInputBorder(),
+                  suffixIcon: IconButton(onPressed: () =>
+                      setState(() {
+                        hideSecret = !hideSecret;
+                      }),
+                      icon: hideSecret ? Icon(Icons.visibility) : Icon(
+                          Icons.visibility_off))
               ),
             ),
             Row(
@@ -199,7 +264,8 @@ class _Add extends State<Add> {
               _errorText!, style: TextStyle(color: Colors.red),)
           ],
         ),
-      ),
+      )
+          : Center(child: const Text("Failed to load TOTP")),
     );
   }
 }
