@@ -217,12 +217,15 @@ class _NavigationStuffState extends State<NavigationStuff> {
                           child: TextButton(
                             onPressed: selectedIdNotifier.value.length > 1
                                 ? null
-                                : () {
-                              Navigator.of(context).push(MaterialPageRoute(
+                                : () async {
+                              Navigator.of(context).pop();
+                              await Navigator.of(context).push(
+                                  MaterialPageRoute(
                                   builder: (BuildContext context) =>
                                       Editor(
                                           totpClassId: selectedIdNotifier.value
                                               .first)));
+                              selectedIdNotifier.value = [];
                               _homeKey.currentState?.refresh();
                             },
                             child: Text(Actions.edit.name.capitalize),
