@@ -1,5 +1,4 @@
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:totp_app/classes/appsettings.dart';
@@ -211,70 +210,65 @@ class _NavigationStuffState extends State<NavigationStuff> {
                 )
               else
                 PopupMenuButton<Actions>(
-                  itemBuilder: (BuildContext context) =>
-                      <PopupMenuEntry<Actions>>[
-                        PopupMenuItem<Actions>(
-                          child: TextButton(
-                            onPressed: selectedIdNotifier.value.length > 1
-                                ? null
-                                : () async {
-                              Navigator.of(context).pop();
-                              await Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                  builder: (BuildContext context) =>
-                                      Editor(
-                                          totpClassId: selectedIdNotifier.value
-                                              .first)));
-                              selectedIdNotifier.value = [];
-                              _homeKey.currentState?.refresh();
-                            },
-                            child: Text(Actions.edit.name.capitalize),
-                          ),
+                  onSelected: (Actions action) async {
+                    if (action == Actions.edit) {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (BuildContext context) =>
+                              Editor(
+                                totpClassId: selectedIdNotifier.value.first,
+                              ),
                         ),
-                        PopupMenuItem<Actions>(
-                          child: TextButton(
-                            child: Text(Actions.delete.name.capitalize),
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return AlertDialog(
-                                    title: const Text("Delete TOTP?"),
-                                    content: Text(
-                                        "Do you really want to permanently delete ${selectedIdNotifier
-                                            .value.length} TOTP(s)?"),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                        child: const Text("Cancel"),
-                                      ),
-                                      FilledButton(
-                                        onPressed: () {
-                                          delete();
-                                          Navigator.of(context).pop();
-                                        },
-                                        style: ButtonStyle(
-                                            backgroundColor: WidgetStateProperty
-                                                .all(Colors.red)
-                                        ),
-                                        child: Text("Delete",
-                                          style: TextStyle(color: Theme
-                                              .of(context)
-                                              .colorScheme
-                                              .primary),),
-                                      ),
-                                    ],
-                                  );
+                      );
+                      selectedIdNotifier.value = [];
+                      _homeKey.currentState?.refresh();
+                    } else if (action == Actions.delete) {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text("Delete TOTP?"),
+                            content: Text(
+                              "Do you really want to permanently delete ${selectedIdNotifier
+                                  .value.length} TOTP(s)?",
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
                                 },
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                ),
+                                child: const Text("Cancel"),
+                              ),
+                              FilledButton(
+                                onPressed: () {
+                                  delete();
+                                  Navigator.of(context).pop();
+                                },
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text("Delete"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    }
+                  },
+                  itemBuilder: (BuildContext context) =>
+                  <PopupMenuEntry<Actions>>[
+                    PopupMenuItem<Actions>(
+                      value: Actions.edit,
+                      enabled: selectedIdNotifier.value.length == 1,
+                      child: const Text("Edit"),
+                    ),
+                    PopupMenuItem<Actions>(
+                      value: Actions.delete,
+                      child: const Text("Delete"),
+                    ),
+                  ],
+                )
             ],
           ),
           drawer: Sidebar(),

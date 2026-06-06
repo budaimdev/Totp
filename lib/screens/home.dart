@@ -18,7 +18,6 @@ class Home extends StatefulWidget {
 class HomeState extends State<Home> {
   late Future<List<TotpClass>> _totpsFuture;
   Timer? _timer;
-  int _remainingSeconds = 0;
 
   Future<List<TotpClass>> _fetchTotps() async {
     final database = DatabaseWrapper();
@@ -30,14 +29,9 @@ class HomeState extends State<Home> {
     super.initState();
     _totpsFuture = _fetchTotps();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      int currentSeconds = DateTime
-          .now()
-          .second % 30;
-      int remaining = 30 - currentSeconds;
-
-      setState(() {
-        _remainingSeconds = remaining;
-      });
+      if (mounted) {
+        setState(() {});
+      }
     });
   }
 
@@ -118,7 +112,10 @@ class HomeState extends State<Home> {
                       child: GestureDetector(
                         onTap: () async {
                           if (widget.selectedIdNotifier.value.isNotEmpty) {
-                            _toggleSelection(item.id!);
+                            final id = item.id;
+                            if (id != null) {
+                              _toggleSelection(id);
+                            }
                           } else {
                             await Clipboard.setData(ClipboardData(text: code));
                             HapticFeedback.mediumImpact();
@@ -134,7 +131,10 @@ class HomeState extends State<Home> {
                           }
                         },
                         onLongPress: () {
-                          _toggleSelection(item.id!);
+                          final id = item.id;
+                          if (id != null) {
+                            _toggleSelection(id);
+                          }
                         },
                         child: Card(
                           elevation: isSelected ? 8 : 4,
@@ -176,7 +176,10 @@ class HomeState extends State<Home> {
                                         ),
                                       ],
                                     ),
-                                    Text(_remainingSeconds.toString()),
+                                    Text('${item.period - ((DateTime
+                                        .now()
+                                        .millisecondsSinceEpoch ~/ 1000) %
+                                        item.period)}'),
                                   ],
                                 ),
                                 Row(

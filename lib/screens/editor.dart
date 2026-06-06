@@ -22,7 +22,10 @@ class _Editor extends State<Editor> {
   String rawValue = "";
   String? _errorText;
   bool _isSavingDisabled = true;
+  bool hideSecret = true;
   int? id;
+  bool _isLoading = false;
+  String? _loadingError;
 
 
   @override
@@ -40,17 +43,33 @@ class _Editor extends State<Editor> {
   }
 
   void _getTotpInfo() async {
-    DatabaseWrapper databaseWrapper = DatabaseWrapper();
-    TotpClass totp = await databaseWrapper.getOneTotp(widget.totpClassId!);
-
     setState(() {
-      id = totp.id;
-      label.text = totp.label;
-      issuer.text = totp.issuer;
-      secret.text = totp.secret;
-      digits.text = totp.digits.toString();
-      period.text = totp.period.toString();
+      _isLoading = true;
     });
+
+    try {
+      DatabaseWrapper databaseWrapper = DatabaseWrapper();
+      TotpClass totp = await databaseWrapper.getOneTotp(widget.totpClassId!);
+
+      if (!mounted) return;
+
+      setState(() {
+        id = totp.id;
+        label.text = totp.label;
+        issuer.text = totp.issuer;
+        secret.text = totp.secret;
+        digits.text = totp.digits.toString();
+        period.text = totp.period.toString();
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorText = "Failed to load data: $e";
+        });
+      }
+    }
   }
 
   void _processScannedQr() {
@@ -100,20 +119,29 @@ class _Editor extends State<Editor> {
   }
 
   void save() async {
-    final db = DatabaseWrapper();
-    TotpClass newTotp = TotpClass(
-        id: id,
-        issuer: issuer.text,
-        secret: secret.text,
-        label: label.text,
-        digits: int.tryParse(digits.text) ?? 6,
-        period: int.tryParse(period.text) ?? 30
-    );
+    try {
+      final db = DatabaseWrapper();
+      TotpClass newTotp = TotpClass(
+          id: id,
+          issuer: issuer.text,
+          secret: secret.text,
+          label: label.text,
+          digits: int.tryParse(digits.text) ?? 6,
+          period: int.tryParse(period.text) ?? 30
+      );
 
-    id = await db.addOrUpdateTotp(newTotp);
+      id = await db.addOrUpdateTotp(newTotp);
 
-    if (mounted) {
-      Navigator.of(context).pop(id);
+      if (mounted) {
+        Navigator.of(context).pop(id);
+      }
+    } catch (e) {
+      _loadingError = e.toString();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed to save: $e"))
+        );
+      }
     }
   }
 
@@ -131,7 +159,9 @@ class _Editor extends State<Editor> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: id == null ? const Text("Add new TOTP") : const Text(
+        title: widget.totpClassId == null
+            ? const Text("Add new TOTP")
+            : const Text(
             "Edit totp"),
         actions: [
           IconButton(
@@ -142,7 +172,8 @@ class _Editor extends State<Editor> {
           )
         ],
       ),
-      body: Padding(
+      body: _isLoading ? CircularProgressIndicator() : _loadingError == null
+          ? Padding(
         padding: const EdgeInsets.all(10.0),
         child: Column(
           spacing: 10.0,
@@ -170,9 +201,15 @@ class _Editor extends State<Editor> {
               keyboardType: TextInputType.visiblePassword,
               enableSuggestions: false,
               autocorrect: false,
-              obscureText: true,
+              obscureText: hideSecret,
               decoration: InputDecoration(
-                border: OutlineInputBorder(),
+                  border: OutlineInputBorder(),
+                  suffixIcon: IconButton(onPressed: () =>
+                      setState(() {
+                        hideSecret = !hideSecret;
+                      }),
+                      icon: hideSecret ? Icon(Icons.visibility) : Icon(
+                          Icons.visibility_off))
               ),
             ),
             Row(
@@ -227,7 +264,8 @@ class _Editor extends State<Editor> {
               _errorText!, style: TextStyle(color: Colors.red),)
           ],
         ),
-      ),
+      )
+          : Center(child: const Text("Failed to load TOTP")),
     );
   }
 }
