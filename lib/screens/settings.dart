@@ -103,6 +103,8 @@ class _SettingsState extends State<Settings> {
       body: ListView(
         children: [
           ListTile(
+            title: const Text("General", style: TextStyle(fontSize: 20),),),
+          ListTile(
             leading: Icon(Icons.palette),
             title: const Text("Theme"),
             trailing: DropdownButton(
@@ -111,8 +113,8 @@ class _SettingsState extends State<Settings> {
                   Brightness value,) {
                 return DropdownMenuItem(
                   value: value,
-                  child: Text(value.name
-                      .capitalize), //Provided by package:flex_color_picker/src/color_picker_extensions.dart
+                  child: Text(
+                      value.name[0].toUpperCase() + value.name.substring(1)),
                 );
               }).toList(),
               onChanged: (value) async {
@@ -176,6 +178,30 @@ class _SettingsState extends State<Settings> {
                 }
               }
           ),
+          Divider(),
+          ListTile(title: const Text(
+            "Synchronization", style: TextStyle(fontSize: 20),),),
+          SwitchListTile(
+              title: const Text("Use WebDAV sync"),
+              value: LocalStorage.settings.useSync,
+              onChanged: (value) async {
+                if (value) {
+                  setState(() {
+                    LocalStorage.settings.useSync = true;
+                  });
+                  await LocalStorage.settings.save(LocalStorage.prefs);
+                } else {
+                  setState(() {
+                    LocalStorage.settings.useSync = false;
+                  });
+                  await LocalStorage.settings.save(LocalStorage.prefs);
+                }
+              }
+          ),
+          ListTile(
+            title: const Text("Account"),
+          ),
+          Divider(),
           ListTile(
             trailing: Text("© ${DateTime
                 .now()
@@ -212,7 +238,7 @@ class _SettingsState extends State<Settings> {
                   }
                 }
               }, icon: Icon(Icons.code))
-          )
+          ),
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:totp_app/classes/account.dart';
 import 'package:totp_app/helpers/local_storage.dart';
 
 class AppSettings {
@@ -9,10 +10,11 @@ class AppSettings {
   bool useForAmoled;
   bool canUseBio;
   bool useBio;
-  int? selectedUser;
+  bool useSync;
+  Account? account;
 
   AppSettings(
-      {required this.brightness, required this.color, required this.useDynamicColors, required this.useForAmoled, this.canUseBio = false, required this.useBio, this.selectedUser});
+      {required this.brightness, required this.color, required this.useDynamicColors, required this.useForAmoled, this.canUseBio = false, required this.useBio, required this.useSync, this.account});
 
   factory AppSettings.load(SharedPreferences prefs) {
     final String theme = prefs.getString("theme") ?? "light";
@@ -21,7 +23,7 @@ class AppSettings {
     final bool amoled = prefs.getBool("amoled") ?? false;
     final bool canUse = prefs.getBool("can_use_bio") ?? false;
     final bool use = prefs.getBool("use_bio") ?? false;
-    final int? selectedUserPref = prefs.getInt("selected_account");
+    final bool useSyncPref = prefs.getBool("use_sync") ?? false;
 
     return AppSettings(
         brightness: theme == "dark" ? Brightness.dark : Brightness.light,
@@ -30,7 +32,7 @@ class AppSettings {
         useForAmoled: amoled,
         canUseBio: canUse,
         useBio: use,
-        selectedUser: selectedUserPref
+      useSync: useSyncPref,
     );
   }
 
@@ -41,10 +43,7 @@ class AppSettings {
     await prefs.setBool("amoled", useForAmoled);
     await prefs.setBool("can_use_bio", canUseBio);
     await prefs.setBool("use_bio", useBio);
-
-    if (selectedUser != null) {
-      await prefs.setInt("use_bio", selectedUser!);
-    }
+    await prefs.setBool("use_sync", useSync);
 
     LocalStorage.settings = AppSettings.load(LocalStorage.prefs);
     LocalStorage.settingsNotifier.value = LocalStorage.settings;

@@ -3,63 +3,46 @@ import 'dart:convert';
 import 'package:totp_app/helpers/local_storage.dart';
 
 class Account {
-  late String username;
-  late String password;
   late String url;
+  late String token;
 
-  Account({required this.username, required this.password, required this.url});
+  Account({required this.url, required this.token});
 
   factory Account.fromJson(Map<String, dynamic> json) {
     return Account(
-      username: json["username"],
-      password: json["password"],
       url: json["url"],
+      token: json["token"],
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'username': username, 'password': password, 'url': url};
+    return {'url': url, 'token': token};
   }
 
-  static Future<List<Account>> getAccounts() async {
-    String? accountsJson = await getData("accounts");
-    if (accountsJson == null || accountsJson.isEmpty) {
-      return [];
+  static Future<Account?> getAccount() async {
+    final secureStorage = LocalStorage.secureStorage;
+    String? accountJson = await secureStorage.read(key: "account");
+
+    if (accountJson == null || accountJson.isEmpty) {
+      return null;
     }
 
-    final List<dynamic> rawList = jsonDecode(accountsJson);
-    return rawList.map((item) => Account.fromJson(item)).toList();
+    return jsonDecode(accountJson);
   }
 
-  static Future<void> addAccount(
-    String username,
-    String password,
+  static Future<void> setAccount(String token,
     String url,
   ) async {
-    List<Account> currentAccounts = await getAccounts();
-    Account account = Account(username: username, password: password, url: url);
-    currentAccounts.add(account);
-    await saveChangesJson("accounts", currentAccounts);
-  }
+    Account account = Account(url: url, token: token);
 
-  static Future<void> removeAccount(String username) async {
-    List<Account> currentAccounts = await getAccounts();
-    currentAccounts.removeWhere((account) => account.username == username);
-    await saveChangesJson("accounts", currentAccounts);
-  }
+    String dataInJson = jsonEncode(account);
 
-  static Future<String?> getData(String key) async {
     final secureStorage = LocalStorage.secureStorage;
-    return await secureStorage.read(key: key);
+    await secureStorage.write(key: "account", value: dataInJson);
   }
 
-  static Future<void> saveChangesJson(String key, dynamic rawData) async {
-    String dataInJson = jsonEncode(rawData);
-    await saveChanges(key, dataInJson);
-  }
-
-  static Future<void> saveChanges(String key, dynamic value) async {
+  static Future<void> removeAccount(String url) async {
     final secureStorage = LocalStorage.secureStorage;
-    await secureStorage.write(key: key, value: value);
+    await secureStorage.delete(key: "account");
   }
 }
