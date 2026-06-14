@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:totp_app/helpers/local_storage.dart';
+import 'package:totp_app/screens/login.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const String githubUrl = "https://github.com/budaimdev/totp";
@@ -182,7 +183,7 @@ class _SettingsState extends State<Settings> {
           ListTile(title: const Text(
             "Synchronization", style: TextStyle(fontSize: 20),),),
           SwitchListTile(
-              title: const Text("Use WebDAV sync"),
+              title: const Text("Use Nextcloud sync"),
               value: LocalStorage.settings.useSync,
               onChanged: (value) async {
                 if (value) {
@@ -200,6 +201,11 @@ class _SettingsState extends State<Settings> {
           ),
           ListTile(
             title: const Text("Account"),
+            trailing: LocalStorage.settings.account == null ? IconButton(
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (BuildContext context) => Login()));
+                }, icon: Icon(Icons.add)) : Text("To be added"),
           ),
           Divider(),
           ListTile(
