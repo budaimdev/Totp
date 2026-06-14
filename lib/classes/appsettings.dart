@@ -9,9 +9,10 @@ class AppSettings {
   bool useForAmoled;
   bool canUseBio;
   bool useBio;
+  int? selectedUser;
 
   AppSettings(
-      {required this.brightness, required this.color, required this.useDynamicColors, required this.useForAmoled, this.canUseBio = false, required this.useBio});
+      {required this.brightness, required this.color, required this.useDynamicColors, required this.useForAmoled, this.canUseBio = false, required this.useBio, this.selectedUser});
 
   factory AppSettings.load(SharedPreferences prefs) {
     final String theme = prefs.getString("theme") ?? "light";
@@ -20,6 +21,7 @@ class AppSettings {
     final bool amoled = prefs.getBool("amoled") ?? false;
     final bool canUse = prefs.getBool("can_use_bio") ?? false;
     final bool use = prefs.getBool("use_bio") ?? false;
+    final int? selectedUserPref = prefs.getInt("selected_account");
 
     return AppSettings(
         brightness: theme == "dark" ? Brightness.dark : Brightness.light,
@@ -27,7 +29,8 @@ class AppSettings {
         useDynamicColors: prefs.getBool("dynamic_colors") ?? false,
         useForAmoled: amoled,
         canUseBio: canUse,
-        useBio: use
+        useBio: use,
+        selectedUser: selectedUserPref
     );
   }
 
@@ -38,6 +41,10 @@ class AppSettings {
     await prefs.setBool("amoled", useForAmoled);
     await prefs.setBool("can_use_bio", canUseBio);
     await prefs.setBool("use_bio", useBio);
+
+    if (selectedUser != null) {
+      await prefs.setInt("use_bio", selectedUser!);
+    }
 
     LocalStorage.settings = AppSettings.load(LocalStorage.prefs);
     LocalStorage.settingsNotifier.value = LocalStorage.settings;
