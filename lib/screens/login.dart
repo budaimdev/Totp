@@ -1,4 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -10,7 +15,8 @@ class Login extends StatefulWidget {
 class _LoginState extends State<Login> {
   final TextEditingController _urlController = TextEditingController();
   final TextEditingController _nicknameController = TextEditingController();
-  String? token;
+  String? pollToken;
+  String? pollEndpoint;
   bool uriError = false;
 
   bool checkForValidUrl() {
@@ -20,7 +26,27 @@ class _LoginState extends State<Login> {
     return uri != null && (uri.scheme == 'https') && uri.host.isNotEmpty;
   }
 
-  void startTheProcess() async {}
+  void startTheProcess() async {
+    //Firstly get the initial stuff - poll {poll_token and url} and login url
+    final response = await http.post(
+        Uri.parse("${_urlController.text}/index.php/login/v2"),
+        headers: {HttpHeaders.userAgentHeader: "FlutterTotpApp"});
+    final responseDecoded = jsonDecode(response.body) as Map<String, dynamic>;
+
+    pollToken = responseDecoded["poll"]["token"];
+    pollEndpoint = responseDecoded["poll"]["endpoint"];
+
+    String loginUrl = responseDecoded["login"];
+
+    //Start check every 2s for successful auth using timer
+
+    await launchUrl(Uri.parse(loginUrl));
+    print("Done");
+
+    //Check for successful auth using timer
+
+    //If nothing happened, wait for 6 second (3 retries), if i got something, show green text, if not, show red one
+  }
 
   @override
   Widget build(BuildContext context) {
