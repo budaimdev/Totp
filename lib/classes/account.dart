@@ -4,19 +4,22 @@ import 'package:totp_app/helpers/local_storage.dart';
 
 class Account {
   late String url;
-  late String token;
+  late String appPassword;
+  late String loginName;
 
-  Account({required this.url, required this.token});
+  Account(
+      {required this.url, required this.appPassword, required this.loginName});
 
   factory Account.fromJson(Map<String, dynamic> json) {
     return Account(
       url: json["url"],
-      token: json["token"],
+      appPassword: json["appPassword"],
+      loginName: json["loginName"],
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'url': url, 'token': token};
+    return {'url': url, 'appPassword': appPassword, "loginName": loginName};
   }
 
   static Future<Account?> getAccount() async {
@@ -30,10 +33,11 @@ class Account {
     return jsonDecode(accountJson);
   }
 
-  static Future<void> setAccount(String token,
-    String url,
+  static Future<void> setAccount(String appPassword,
+      String url, String loginName
   ) async {
-    Account account = Account(url: url, token: token);
+    Account account = Account(
+        url: url, appPassword: appPassword, loginName: loginName);
 
     String dataInJson = jsonEncode(account);
 
