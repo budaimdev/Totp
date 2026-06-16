@@ -17,7 +17,6 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
   final TextEditingController _urlController = TextEditingController();
-  final TextEditingController _nicknameController = TextEditingController();
   bool uriError = false;
 
   String? pollToken;
@@ -144,18 +143,6 @@ class _LoginState extends State<Login> {
                 });
               },
             ),
-            TextField(
-              controller: _nicknameController,
-              decoration: InputDecoration(
-                hintText: "Nickname for this Nextcloud connection",
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _nicknameController.text = value;
-                });
-              },
-            ),
             ListTile(
               trailing: FilledButton(
                 onPressed: uriError == true || _urlController.text.isEmpty
@@ -186,7 +173,6 @@ class _LoginState extends State<Login> {
   @override
   void dispose() {
     _urlController.dispose();
-    _nicknameController.dispose();
     _timer?.cancel();
     super.dispose();
   }
