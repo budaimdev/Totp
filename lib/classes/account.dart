@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:totp_app/helpers/local_storage.dart';
 
 class Account {
-  late String url;
-  late String appPassword;
-  late String loginName;
+  final String url;
+  final String appPassword;
+  final String loginName;
 
   Account(
       {required this.url, required this.appPassword, required this.loginName});
@@ -24,13 +24,19 @@ class Account {
 
   static Future<Account?> getAccount() async {
     final secureStorage = LocalStorage.secureStorage;
-    String? accountJson = await secureStorage.read(key: "account");
 
-    if (accountJson == null || accountJson.isEmpty) {
+    try {
+      String? accountJson = await secureStorage.read(key: "account");
+
+      if (accountJson == null || accountJson.isEmpty) {
+        return null;
+      }
+
+      return Account.fromJson(jsonDecode(accountJson));
+    } catch (e) {
+      await secureStorage.delete(key: "account");
       return null;
     }
-
-    return Account.fromJson(jsonDecode(accountJson));
   }
 
   static Future<void> setAccount(String appPassword,

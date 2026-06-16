@@ -24,6 +24,7 @@ class _LoginState extends State<Login> {
   String? pollEndpoint;
   Timer? _timer;
   String? statusText;
+  bool _isCheckingAuth = false;
 
   Account? _account;
 
@@ -36,19 +37,23 @@ class _LoginState extends State<Login> {
 
   void startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 2), (timer) async {
-      if (mounted) {
-        bool authed = await checkForAuth();
-        if (authed) {
-          _timer?.cancel();
+      if (mounted && !_isCheckingAuth) {
+        _isCheckingAuth = true;
+        try {
+          bool authed = await checkForAuth();
+          if (authed) {
+            _timer?.cancel();
 
-          Account? account = _account;
-          if (account != null) {
-            stopTimer();
-            setState(() {
-              statusText = "Authenticated successfully";
-            });
+            Account? account = _account;
+            if (account != null) {
+              stopTimer();
+              setState(() {
+                statusText = "Authenticated successfully";
+              });
+            }
           }
-        } else {
+        } finally {
+          _isCheckingAuth = false;
         }
       }
     });
@@ -63,6 +68,8 @@ class _LoginState extends State<Login> {
     String? token = pollToken;
 
     if (endpoint == null || token == null) return false;
+
+    _isCheckingAuth = true;
 
     final headers = {
       HttpHeaders.userAgentHeader: "FlutterTotpApp",
@@ -82,26 +89,56 @@ class _LoginState extends State<Login> {
       _account = Account(url: responseDecoded["server"],
           appPassword: responseDecoded["appPassword"],
           loginName: responseDecoded["loginName"]);
+
+      _isCheckingAuth = false;
       return true;
     }
 
+    _isCheckingAuth = false;
     return false;
   }
 
   void startTheProcess() async {
-    //Firstly get the initial stuff - poll {poll_token and url} and login url
-    final response = await http.post(
-        Uri.parse("${_urlController.text}/index.php/login/v2"),
-        headers: {HttpHeaders.userAgentHeader: "FlutterTotpApp"});
-    final responseDecoded = jsonDecode(response.body) as Map<String, dynamic>;
+    setState(() {
+      statusText = "Connecting to server...";
+    });
+    try {
+      final response = await http.post(
+          Uri.parse("${_urlController.text}/index.php/login/v2"),
+          headers: {HttpHeaders.userAgentHeader: "FlutterTotpApp"});
 
-    pollToken = responseDecoded["poll"]["token"];
-    pollEndpoint = responseDecoded["poll"]["endpoint"];
+      if (response.statusCode != 200) {
+        setState(() {
+          statusText =
+          "Failed to connect: Server returned status ${response.statusCode}";
+        });
+        return;
+      }
 
-    String loginUrl = responseDecoded["login"];
+      final responseDecoded = jsonDecode(response.body) as Map<String, dynamic>;
 
-    await launchUrl(Uri.parse(loginUrl));
-    startTimer();
+      pollToken = responseDecoded["poll"]["token"];
+      pollEndpoint = responseDecoded["poll"]["endpoint"];
+
+      String loginUrl = responseDecoded["login"];
+
+      if (await canLaunchUrl(Uri.parse(loginUrl))) {
+        await launchUrl(
+            Uri.parse(loginUrl), mode: LaunchMode.externalApplication);
+        setState(() {
+          statusText = "Please log in via your browser...";
+        });
+        startTimer();
+      } else {
+        setState(() {
+          statusText = "Could not open login URL in browser.";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        statusText = "An error occurred: ${e.toString()}";
+      });
+    }
   }
 
   void _save() async {
