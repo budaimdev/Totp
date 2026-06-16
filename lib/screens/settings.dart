@@ -4,6 +4,7 @@ import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:totp_app/classes/appsettings.dart';
 import 'package:totp_app/helpers/local_storage.dart';
 import 'package:totp_app/screens/login.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -199,13 +200,63 @@ class _SettingsState extends State<Settings> {
                 }
               }
           ),
-          ListTile(
-            title: const Text("Account"),
-            trailing: LocalStorage.settings.account == null ? IconButton(
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                      builder: (BuildContext context) => Login()));
-                }, icon: Icon(Icons.add)) : Text("To be added"),
+          ValueListenableBuilder<AppSettings>(
+              valueListenable: LocalStorage.settingsNotifier,
+              builder: (context, value, child) {
+                return ListTile(
+                  title: const Text("Account"),
+                  trailing: LocalStorage.settings.account == null ? IconButton(
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (BuildContext context) => Login()));
+                      }, icon: Icon(Icons.add)) : Container(
+                    width: 100,
+                    height: 100,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme
+                              .of(context)
+                              .colorScheme
+                              .primary,
+                          Theme
+                              .of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.8),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      border: Border.all(
+                        color: Theme
+                            .of(context)
+                            .colorScheme
+                            .primaryContainer,
+                        width: 3,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      LocalStorage.settings.account!.loginName[0].toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 42,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+                );
+              }
           ),
           Divider(),
           ListTile(

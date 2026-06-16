@@ -30,7 +30,7 @@ class Account {
       return null;
     }
 
-    return jsonDecode(accountJson);
+    return Account.fromJson(jsonDecode(accountJson));
   }
 
   static Future<void> setAccount(String appPassword,

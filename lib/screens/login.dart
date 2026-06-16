@@ -23,7 +23,6 @@ class _LoginState extends State<Login> {
   String? pollToken;
   String? pollEndpoint;
   Timer? _timer;
-  int tries = 0;
   String? statusText;
 
   Account? _account;
@@ -38,29 +37,18 @@ class _LoginState extends State<Login> {
   void startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 2), (timer) async {
       if (mounted) {
-        if (tries < 3 && _account == null) {
-          bool authed = await checkForAuth();
-          if (authed) {
-            _timer?.cancel();
+        bool authed = await checkForAuth();
+        if (authed) {
+          _timer?.cancel();
 
-            Account? account = _account;
-            if (account != null) {
-              LocalStorage.settings.account = _account;
-              Account.setAccount(
-                  account.appPassword, account.url, account.loginName);
-              stopTimer();
-              if (mounted) {
-                Navigator.of(context).pop();
-              }
-              setState(() {
-                statusText = "Authenticated successfully";
-              });
-            }
+          Account? account = _account;
+          if (account != null) {
+            stopTimer();
+            setState(() {
+              statusText = "Authenticated successfully";
+            });
           }
-        } else if (tries == 3 && _account == null) {
-          setState(() {
-            statusText = "Failed to authenticate";
-          });
+        } else {
         }
       }
     });
@@ -68,7 +56,6 @@ class _LoginState extends State<Login> {
 
   void stopTimer() {
     _timer = null;
-    tries = 0;
   }
 
   Future<bool> checkForAuth() async {
@@ -79,11 +66,15 @@ class _LoginState extends State<Login> {
 
     final headers = {
       HttpHeaders.userAgentHeader: "FlutterTotpApp",
-      HttpHeaders.contentTypeHeader: ContentType.json.value,
+      HttpHeaders.contentTypeHeader: "application/x-www-form-urlencoded",
+    };
+
+    final bodyData = {
       "token": token
     };
 
-    final response = await http.post(Uri.parse(endpoint), headers: headers);
+    final response = await http.post(
+        Uri.parse(endpoint), headers: headers, body: bodyData);
 
     if (response.statusCode == 200) {
       final responseDecoded = jsonDecode(response.body) as Map<String, dynamic>;
@@ -111,6 +102,20 @@ class _LoginState extends State<Login> {
 
     await launchUrl(Uri.parse(loginUrl));
     startTimer();
+  }
+
+  void _save() async {
+    final account = _account;
+
+    if (account == null) return;
+
+    LocalStorage.settings.account = account;
+    await Account.setAccount(
+        account.appPassword, account.url, account.loginName);
+    LocalStorage.settingsNotifier.value = LocalStorage.settings;
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -153,7 +158,9 @@ class _LoginState extends State<Login> {
             ),
             ListTile(
               trailing: FilledButton(
-                onPressed: () {
+                onPressed: uriError == true || _urlController.text.isEmpty
+                    ? null
+                    : () {
                   startTheProcess();
                 },
                 child: const Text("Log In"),
@@ -161,7 +168,14 @@ class _LoginState extends State<Login> {
             ),
             ListTile(
               title: const Text("Status"),
-              trailing: Text(statusText ?? ""),
+              trailing: _timer == null && _account == null ? Text(
+                  "No progress yet") : _account == null
+                  ? CircularProgressIndicator()
+                  : Text(statusText ?? ""),
+            ),
+            FilledButton(
+                onPressed: _account == null ? null : _save,
+                child: const Text("Save")
             )
           ],
         ),
@@ -173,6 +187,7 @@ class _LoginState extends State<Login> {
   void dispose() {
     _urlController.dispose();
     _nicknameController.dispose();
+    _timer?.cancel();
     super.dispose();
   }
 

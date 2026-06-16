@@ -26,12 +26,12 @@ class AppSettings {
     final bool useSyncPref = prefs.getBool("use_sync") ?? false;
 
     return AppSettings(
-        brightness: theme == "dark" ? Brightness.dark : Brightness.light,
-        color: color,
-        useDynamicColors: prefs.getBool("dynamic_colors") ?? false,
-        useForAmoled: amoled,
-        canUseBio: canUse,
-        useBio: use,
+      brightness: theme == "dark" ? Brightness.dark : Brightness.light,
+      color: color,
+      useDynamicColors: prefs.getBool("dynamic_colors") ?? false,
+      useForAmoled: amoled,
+      canUseBio: canUse,
+      useBio: use,
       useSync: useSyncPref,
     );
   }
@@ -46,6 +46,7 @@ class AppSettings {
     await prefs.setBool("use_sync", useSync);
 
     LocalStorage.settings = AppSettings.load(LocalStorage.prefs);
+    LocalStorage.settings.account = await Account.getAccount();
     LocalStorage.settingsNotifier.value = LocalStorage.settings;
   }
 }
