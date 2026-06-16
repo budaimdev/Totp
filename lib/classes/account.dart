@@ -45,7 +45,7 @@ class Account {
     await secureStorage.write(key: "account", value: dataInJson);
   }
 
-  static Future<void> removeAccount(String url) async {
+  static Future<void> removeAccount() async {
     final secureStorage = LocalStorage.secureStorage;
     await secureStorage.delete(key: "account");
   }

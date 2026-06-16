@@ -16,7 +16,8 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
-  final TextEditingController _urlController = TextEditingController();
+  final TextEditingController _urlController = TextEditingController(
+      text: "https://");
   bool uriError = false;
 
   String? pollToken;
@@ -129,6 +130,10 @@ class _LoginState extends State<Login> {
           children: [
             TextField(
               controller: _urlController,
+              keyboardType: TextInputType.url,
+              textCapitalization: TextCapitalization.none,
+              autocorrect: false,
+              enableSuggestions: false,
               decoration: InputDecoration(
                 hintText: "Nextcloud server address (HTTPS)",
                 border: OutlineInputBorder(),
