@@ -293,8 +293,8 @@ class _SettingsState extends State<Settings> {
                           }
                         },
                         child: Container(
-                          width: 100,
-                          height: 100,
+                          width: 40,
+                          height: 40,
                           alignment: Alignment.topCenter,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
@@ -333,8 +333,11 @@ class _SettingsState extends State<Settings> {
                             ],
                           ),
                           child: Text(
+                            LocalStorage.settings.account!.loginName.isNotEmpty
+                                ?
                             LocalStorage.settings.account!.loginName[0]
-                                .toUpperCase(),
+                                .toUpperCase()
+                                : "?",
                             style: const TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.w600,
