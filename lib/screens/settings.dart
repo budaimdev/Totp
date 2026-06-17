@@ -110,9 +110,23 @@ class _SettingsState extends State<Settings> {
   }
 
   void delete() async {
-    await Account.removeAccount();
-    LocalStorage.settings.account = null;
-    LocalStorage.settingsNotifier.value = LocalStorage.settings;
+    try {
+      await Account.removeAccount();
+      LocalStorage.settings.account = null;
+      LocalStorage.settingsNotifier.value = LocalStorage.settings;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: const Text("Removed user successfully.")
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: const Text("Failed to remove user.")
+        ));
+      }
+    }
   }
 
   @override

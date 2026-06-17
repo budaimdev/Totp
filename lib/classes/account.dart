@@ -11,10 +11,18 @@ class Account {
       {required this.url, required this.appPassword, required this.loginName});
 
   factory Account.fromJson(Map<String, dynamic> json) {
+    String? url = json["url"];
+    String? appPassword = json["appPassword"];
+    String? loginName = json["loginName"];
+
+    if (url == null || appPassword == null || loginName == null) {
+      throw FormatException("Invalid JSON");
+    }
+
     return Account(
-      url: json["url"],
-      appPassword: json["appPassword"],
-      loginName: json["loginName"],
+      url: url,
+      appPassword: appPassword,
+      loginName: loginName,
     );
   }
 

@@ -16,8 +16,11 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
+  static const int _maxTries = 150;
+
   final TextEditingController _urlController = TextEditingController(
-      text: "https://");
+    text: "https://",
+  );
   bool uriError = false;
 
   String? pollToken;
@@ -25,6 +28,7 @@ class _LoginState extends State<Login> {
   Timer? _timer;
   String? statusText;
   bool _isCheckingAuth = false;
+  int _tries = 0;
 
   Account? _account;
 
@@ -37,7 +41,19 @@ class _LoginState extends State<Login> {
 
   void startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+      if (_tries >= _maxTries) {
+        stopTimer();
+
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: const Text("Login timeout")));
+        }
+
+        return;
+      }
       if (mounted && !_isCheckingAuth) {
+        _tries++;
         _isCheckingAuth = true;
         try {
           bool authed = await checkForAuth();
@@ -60,6 +76,7 @@ class _LoginState extends State<Login> {
   }
 
   void stopTimer() {
+    _timer?.cancel();
     _timer = null;
   }
 
@@ -69,29 +86,34 @@ class _LoginState extends State<Login> {
 
     if (endpoint == null || token == null) return false;
 
-    _isCheckingAuth = true;
-
     final headers = {
       HttpHeaders.userAgentHeader: "FlutterTotpApp",
       HttpHeaders.contentTypeHeader: "application/x-www-form-urlencoded",
     };
 
-    final bodyData = {
-      "token": token
-    };
+    final bodyData = {"token": token};
 
-    final response = await http.post(
-        Uri.parse(endpoint), headers: headers, body: bodyData);
+    try {
+      final response = await http.post(
+        Uri.parse(endpoint),
+        headers: headers,
+        body: bodyData,
+      ).timeout(const Duration(seconds: 10));
 
-    if (response.statusCode == 200) {
-      final responseDecoded = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 200) {
+        final responseDecoded =
+        jsonDecode(response.body) as Map<String, dynamic>;
 
-      _account = Account(url: responseDecoded["server"],
+        _account = Account(
+          url: responseDecoded["server"],
           appPassword: responseDecoded["appPassword"],
-          loginName: responseDecoded["loginName"]);
+          loginName: responseDecoded["loginName"],
+        );
 
-      _isCheckingAuth = false;
-      return true;
+        return true;
+      }
+    } catch (e) {
+      return false;
     }
 
     _isCheckingAuth = false;
@@ -104,8 +126,9 @@ class _LoginState extends State<Login> {
     });
     try {
       final response = await http.post(
-          Uri.parse("${_urlController.text}/index.php/login/v2"),
-          headers: {HttpHeaders.userAgentHeader: "FlutterTotpApp"});
+        Uri.parse("${_urlController.text}/index.php/login/v2"),
+        headers: {HttpHeaders.userAgentHeader: "FlutterTotpApp"},
+      );
 
       if (response.statusCode != 200) {
         setState(() {
@@ -117,14 +140,27 @@ class _LoginState extends State<Login> {
 
       final responseDecoded = jsonDecode(response.body) as Map<String, dynamic>;
 
-      pollToken = responseDecoded["poll"]["token"];
-      pollEndpoint = responseDecoded["poll"]["endpoint"];
+      final poll = responseDecoded["poll"];
+      if (poll is! Map<String, dynamic>) {
+        throw FormatException("Invalid poll response");
+      }
 
-      String loginUrl = responseDecoded["login"];
+      pollToken = poll["token"] as String?;
+      pollEndpoint = poll["endpoint"] as String?;
+      final loginUrl = responseDecoded["login"] as String?;
+
+      if (pollToken == null || pollEndpoint == null || loginUrl == null) {
+        setState(() {
+          statusText = "Server returned incomplete login data";
+        });
+        return;
+      }
 
       if (await canLaunchUrl(Uri.parse(loginUrl))) {
         await launchUrl(
-            Uri.parse(loginUrl), mode: LaunchMode.externalApplication);
+          Uri.parse(loginUrl),
+          mode: LaunchMode.externalApplication,
+        );
         setState(() {
           statusText = "Please log in via your browser...";
         });
@@ -142,16 +178,33 @@ class _LoginState extends State<Login> {
   }
 
   void _save() async {
-    final account = _account;
+    try {
+      final account = _account;
 
-    if (account == null) return;
+      if (account == null) return;
 
-    LocalStorage.settings.account = account;
-    await Account.setAccount(
-        account.appPassword, account.url, account.loginName);
-    LocalStorage.settingsNotifier.value = LocalStorage.settings;
-    if (mounted) {
-      Navigator.of(context).pop();
+      LocalStorage.settings.account = account;
+      await Account.setAccount(
+        account.appPassword,
+        account.url,
+        account.loginName,
+      );
+      LocalStorage.settingsNotifier.value = LocalStorage.settings;
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: const Text("Saved account successfully")),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: const Text("Failed to save account.")),
+        );
+      }
     }
   }
 
@@ -197,15 +250,16 @@ class _LoginState extends State<Login> {
             ),
             ListTile(
               title: const Text("Status"),
-              trailing: _timer == null && _account == null ? Text(
-                  "No progress yet") : _account == null
+              trailing: _timer == null && _account == null
+                  ? Text("No progress yet")
+                  : _account == null
                   ? CircularProgressIndicator()
                   : Text(statusText ?? ""),
             ),
             FilledButton(
-                onPressed: _account == null ? null : _save,
-                child: const Text("Save")
-            )
+              onPressed: _account == null ? null : _save,
+              child: const Text("Save"),
+            ),
           ],
         ),
       ),
@@ -216,8 +270,7 @@ class _LoginState extends State<Login> {
   void dispose() {
     _urlController.dispose();
     _timer?.cancel();
+    _timer = null;
     super.dispose();
   }
-
-
 }
