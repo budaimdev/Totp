@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:totp_app/classes/account.dart';
+import 'package:totp_app/classes/webdav.dart';
 import 'package:totp_app/consts/consts.dart';
 import 'package:totp_app/helpers/local_storage.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -192,16 +193,26 @@ class _LoginState extends State<Login> {
         account.loginName,
       );
       LocalStorage.settingsNotifier.value = LocalStorage.settings;
-      final client = WebdavClient.withCredentials(
-        account.loginName,
-        account.appPassword,
-        baseUrl: account.url,
-      );
-      LocalStorage.webdavClient = client;
+
+      //Upload to cloud (here I'm 100% sure that they have sync enabled)
+      LocalStorage.webdavClient =
+          Webdav().init(account.loginName, account.appPassword, account.url);
+      List<DavResource> resources = await LocalStorage.webdavClient
+          .listResources("/");
+      DavResource? remoteFolder = resources
+          .where((resource) =>
+      resource.name == REMOTE_FOLDER && resource.isDirectory == true)
+          .firstOrNull;
+      if (remoteFolder == null) {
+        await LocalStorage.webdavClient.createDirectory("/$REMOTE_FOLDER");
+      }
+
+      await LocalStorage.webdavClient.upload(
+          "/$REMOTE_FOLDER/sync.txt", "TODO: Add the data");
+
       if (mounted) {
         Navigator.of(context).pop();
       }
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: const Text("Saved account successfully")),

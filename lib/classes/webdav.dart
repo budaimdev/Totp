@@ -14,12 +14,14 @@ class Webdav {
     return _instance;
   }
 
-  void init(String username, String password, String baseUrl) {
+  Webdav init(String username, String password, String baseUrl) {
     _client = WebdavClient.withCredentials(
       username,
       password,
       baseUrl: baseUrl,
     );
+
+    return _instance;
   }
 
   Future<List<DavResource>> listResources(String url) async {
@@ -30,7 +32,7 @@ class Webdav {
     await _client.createDirectory(url);
   }
 
-  Future<void> uploadFile(String url, String data) async {
+  Future<void> upload(String url, String data) async {
     Uint8List convertedData = Uint8List.fromList(utf8.encode(data));
     await _client.put(url, convertedData);
   }

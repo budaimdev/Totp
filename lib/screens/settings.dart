@@ -6,10 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:totp_app/classes/account.dart';
 import 'package:totp_app/classes/appsettings.dart';
+import 'package:totp_app/classes/webdav.dart';
 import 'package:totp_app/helpers/local_storage.dart';
 import 'package:totp_app/screens/login.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:webdav_plus/webdav_plus.dart';
 
 const String githubUrl = "https://github.com/budaimdev/totp";
 
@@ -113,10 +113,8 @@ class _SettingsState extends State<Settings> {
   void _setupAuth() async {
     Account? account = await Account.getAccount();
     if (account == null) return;
-
-    final client = WebdavClient.withCredentials(
-        account.loginName, account.appPassword, baseUrl: account.url);
-    LocalStorage.webdavClient = client;
+    LocalStorage.webdavClient =
+        Webdav().init(account.loginName, account.appPassword, account.url);
   }
 
   void delete() async {
