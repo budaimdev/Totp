@@ -4,10 +4,59 @@ import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:totp_app/classes/account.dart';
+import 'package:totp_app/classes/appsettings.dart';
 import 'package:totp_app/helpers/local_storage.dart';
+import 'package:totp_app/screens/login.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const String githubUrl = "https://github.com/budaimdev/totp";
+
+enum AccountActions {
+  delete("Delete", Icons.delete);
+
+  final String name;
+  final IconData icon;
+
+  const AccountActions(this.name, this.icon);
+
+  void execute(BuildContext context, VoidCallback delete) {
+    switch (this) {
+      case AccountActions.delete:
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Delete account?"),
+              content: Text(
+                  "Do you really want to delete this account?"
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text("Cancel"),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    delete();
+                    Navigator.of(context).pop();
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text("Delete"),
+                ),
+              ],
+            );
+          },
+        );
+        break;
+    }
+  }
+}
 
 class Settings extends StatefulWidget {
   const Settings({super.key});
@@ -17,6 +66,8 @@ class Settings extends StatefulWidget {
 }
 
 class _SettingsState extends State<Settings> {
+  AccountActions? selectedItem;
+
   Future<void> openColorPicker(BuildContext context) async {
     final Color newColor = await showColorPickerDialog(
       context,
@@ -58,6 +109,26 @@ class _SettingsState extends State<Settings> {
     }
   }
 
+  void delete() async {
+    try {
+      await Account.removeAccount();
+      LocalStorage.settings.account = null;
+      LocalStorage.settingsNotifier.value = LocalStorage.settings;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: const Text("Removed user successfully.")
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: const Text("Failed to remove user.")
+        ));
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -87,9 +158,9 @@ class _SettingsState extends State<Settings> {
 
     try {
       return await auth.authenticate(
-          localizedReason: "You need to verify yourself to enable auth.",
-          persistAcrossBackgrounding: true,
-          biometricOnly: true
+        localizedReason: "You need to verify yourself to enable auth.",
+        persistAcrossBackgrounding: true,
+        biometricOnly: true,
       );
     } on PlatformException catch (_) {
       return false;
@@ -103,6 +174,9 @@ class _SettingsState extends State<Settings> {
       body: ListView(
         children: [
           ListTile(
+            title: const Text("General", style: TextStyle(fontSize: 20)),
+          ),
+          ListTile(
             leading: Icon(Icons.palette),
             title: const Text("Theme"),
             trailing: DropdownButton(
@@ -111,8 +185,9 @@ class _SettingsState extends State<Settings> {
                   Brightness value,) {
                 return DropdownMenuItem(
                   value: value,
-                  child: Text(value.name
-                      .capitalize), //Provided by package:flex_color_picker/src/color_picker_extensions.dart
+                  child: Text(
+                    value.name[0].toUpperCase() + value.name.substring(1),
+                  ),
                 );
               }).toList(),
               onChanged: (value) async {
@@ -156,35 +231,167 @@ class _SettingsState extends State<Settings> {
             },
           ),
           SwitchListTile(
-              title: const Text("Enable authentication"),
-              secondary: Icon(Icons.lock),
-              value: LocalStorage.settings.useBio,
-              onChanged: !LocalStorage.settings.canUseBio ? null : (
-                  value) async {
-                if (value) {
-                  if (await setupAuth()) {
-                    setState(() {
-                      LocalStorage.settings.useBio = true;
-                    });
-                    await LocalStorage.settings.save(LocalStorage.prefs);
-                  }
-                } else {
+            title: const Text("Enable authentication"),
+            secondary: Icon(Icons.lock),
+            value: LocalStorage.settings.useBio,
+            onChanged: !LocalStorage.settings.canUseBio
+                ? null
+                : (value) async {
+              if (value) {
+                if (await setupAuth()) {
                   setState(() {
-                    LocalStorage.settings.useBio = false;
+                    LocalStorage.settings.useBio = true;
                   });
                   await LocalStorage.settings.save(LocalStorage.prefs);
                 }
+              } else {
+                setState(() {
+                  LocalStorage.settings.useBio = false;
+                });
+                await LocalStorage.settings.save(LocalStorage.prefs);
               }
+            },
+          ),
+          Divider(),
+          ListTile(
+            title: const Text(
+              "Synchronization",
+              style: TextStyle(fontSize: 20),
+            ),
+          ),
+          SwitchListTile(
+            title: const Text("Use Nextcloud sync"),
+            value: LocalStorage.settings.useSync,
+            onChanged: (value) async {
+              if (value) {
+                setState(() {
+                  LocalStorage.settings.useSync = true;
+                });
+                await LocalStorage.settings.save(LocalStorage.prefs);
+              } else {
+                setState(() {
+                  LocalStorage.settings.useSync = false;
+                });
+                await LocalStorage.settings.save(LocalStorage.prefs);
+              }
+            },
+          ),
+          ValueListenableBuilder<AppSettings>(
+            valueListenable: LocalStorage.settingsNotifier,
+            builder: (context, value, child) {
+              return ListTile(
+                  title: const Text("Account"),
+                  trailing: LocalStorage.settings.useSync ? LocalStorage
+                      .settings.account == null
+                      ? IconButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (BuildContext context) => Login(),
+                        ),
+                      );
+                    },
+                    icon: Icon(Icons.add),
+                  )
+                      : MenuAnchor(
+                    builder:
+                        (BuildContext context,
+                        MenuController controller,
+                        Widget? child,) {
+                      return GestureDetector(
+                        onTap: () {
+                          if (controller.isOpen) {
+                            controller.close();
+                          } else {
+                            controller.open();
+                          }
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.topCenter,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                Theme
+                                    .of(context)
+                                    .colorScheme
+                                    .primary,
+                                Theme
+                                    .of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withValues(alpha: 0.8),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            border: Border.all(
+                              color: Theme
+                                  .of(
+                                context,
+                              )
+                                  .colorScheme
+                                  .primaryContainer,
+                              width: 3,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(
+                                  alpha: 0.15,
+                                ),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            LocalStorage.settings.account!.loginName.isNotEmpty
+                                ?
+                            LocalStorage.settings.account!.loginName[0]
+                                .toUpperCase()
+                                : "?",
+                            style: const TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    menuChildren: AccountActions.values.map((
+                        AccountActions action,) {
+                      return MenuItemButton(
+                        leadingIcon: Icon(action.icon),
+                        child: Text(action.name),
+                        onPressed: () {
+                          action.execute(context, delete);
+
+                          setState(() {
+                            selectedItem = action;
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ) : const Text("Disabled")
+              );
+            },
+          ),
+          Divider(),
+          ListTile(
+            trailing: Text(
+              "© ${DateTime
+                  .now()
+                  .year} Michal Budai (budaimdev)",
+              style: TextStyle(fontSize: 10),
+            ),
           ),
           ListTile(
-            trailing: Text("© ${DateTime
-                .now()
-                .year} Michal Budai (budaimdev)",
-              style: TextStyle(fontSize: 10),),
-          ),
-          ListTile(
-              trailing:
-              IconButton.outlined(onPressed: () async {
+            trailing: IconButton.outlined(
+              onPressed: () async {
                 final Uri url = Uri.parse(githubUrl);
 
                 if (await canLaunchUrl(url)) {
@@ -211,8 +418,10 @@ class _SettingsState extends State<Settings> {
                     );
                   }
                 }
-              }, icon: Icon(Icons.code))
-          )
+              },
+              icon: Icon(Icons.code),
+            ),
+          ),
         ],
       ),
     );

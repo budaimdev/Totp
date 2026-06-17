@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:totp_app/classes/account.dart';
 import 'package:totp_app/helpers/local_storage.dart';
 
 class AppSettings {
@@ -9,9 +10,11 @@ class AppSettings {
   bool useForAmoled;
   bool canUseBio;
   bool useBio;
+  bool useSync;
+  Account? account;
 
   AppSettings(
-      {required this.brightness, required this.color, required this.useDynamicColors, required this.useForAmoled, this.canUseBio = false, required this.useBio});
+      {required this.brightness, required this.color, required this.useDynamicColors, required this.useForAmoled, this.canUseBio = false, required this.useBio, required this.useSync, this.account});
 
   factory AppSettings.load(SharedPreferences prefs) {
     final String theme = prefs.getString("theme") ?? "light";
@@ -20,14 +23,16 @@ class AppSettings {
     final bool amoled = prefs.getBool("amoled") ?? false;
     final bool canUse = prefs.getBool("can_use_bio") ?? false;
     final bool use = prefs.getBool("use_bio") ?? false;
+    final bool useSyncPref = prefs.getBool("use_sync") ?? false;
 
     return AppSettings(
-        brightness: theme == "dark" ? Brightness.dark : Brightness.light,
-        color: color,
-        useDynamicColors: prefs.getBool("dynamic_colors") ?? false,
-        useForAmoled: amoled,
-        canUseBio: canUse,
-        useBio: use
+      brightness: theme == "dark" ? Brightness.dark : Brightness.light,
+      color: color,
+      useDynamicColors: prefs.getBool("dynamic_colors") ?? false,
+      useForAmoled: amoled,
+      canUseBio: canUse,
+      useBio: use,
+      useSync: useSyncPref,
     );
   }
 
@@ -38,8 +43,10 @@ class AppSettings {
     await prefs.setBool("amoled", useForAmoled);
     await prefs.setBool("can_use_bio", canUseBio);
     await prefs.setBool("use_bio", useBio);
+    await prefs.setBool("use_sync", useSync);
 
     LocalStorage.settings = AppSettings.load(LocalStorage.prefs);
+    LocalStorage.settings.account = await Account.getAccount();
     LocalStorage.settingsNotifier.value = LocalStorage.settings;
   }
 }
