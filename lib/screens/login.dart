@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:totp_app/classes/account.dart';
 import 'package:totp_app/helpers/local_storage.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:webdav_plus/webdav_plus.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -190,6 +191,12 @@ class _LoginState extends State<Login> {
         account.loginName,
       );
       LocalStorage.settingsNotifier.value = LocalStorage.settings;
+      final client = WebdavClient.withCredentials(
+        account.loginName,
+        account.appPassword,
+        baseUrl: account.url,
+      );
+      LocalStorage.webdavClient = client;
       if (mounted) {
         Navigator.of(context).pop();
       }

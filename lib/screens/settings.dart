@@ -9,6 +9,7 @@ import 'package:totp_app/classes/appsettings.dart';
 import 'package:totp_app/helpers/local_storage.dart';
 import 'package:totp_app/screens/login.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:webdav_plus/webdav_plus.dart';
 
 const String githubUrl = "https://github.com/budaimdev/totp";
 
@@ -107,6 +108,15 @@ class _SettingsState extends State<Settings> {
       });
       await LocalStorage.settings.save(LocalStorage.prefs);
     }
+  }
+
+  void _setupAuth() async {
+    Account? account = await Account.getAccount();
+    if (account == null) return;
+
+    final client = WebdavClient.withCredentials(
+        account.loginName, account.appPassword, baseUrl: account.url);
+    LocalStorage.webdavClient = client;
   }
 
   void delete() async {
@@ -267,6 +277,7 @@ class _SettingsState extends State<Settings> {
                 setState(() {
                   LocalStorage.settings.useSync = true;
                 });
+                _setupAuth();
                 await LocalStorage.settings.save(LocalStorage.prefs);
               } else {
                 setState(() {
