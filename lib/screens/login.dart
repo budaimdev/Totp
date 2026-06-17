@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:totp_app/classes/account.dart';
+import 'package:totp_app/consts/consts.dart';
 import 'package:totp_app/helpers/local_storage.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webdav_plus/webdav_plus.dart';
@@ -88,7 +89,7 @@ class _LoginState extends State<Login> {
     if (endpoint == null || token == null) return false;
 
     final headers = {
-      HttpHeaders.userAgentHeader: "FlutterTotpApp",
+      HttpHeaders.userAgentHeader: USER_AGENT,
       HttpHeaders.contentTypeHeader: "application/x-www-form-urlencoded",
     };
 
@@ -128,7 +129,7 @@ class _LoginState extends State<Login> {
     try {
       final response = await http.post(
         Uri.parse("${_urlController.text}/index.php/login/v2"),
-        headers: {HttpHeaders.userAgentHeader: "FlutterTotpApp"},
+        headers: {HttpHeaders.userAgentHeader: USER_AGENT},
       );
 
       if (response.statusCode != 200) {
