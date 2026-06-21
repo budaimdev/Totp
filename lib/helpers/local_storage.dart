@@ -15,7 +15,7 @@ class LocalStorage {
   static Future<void> init() async {
     prefs = await SharedPreferences.getInstance();
     secureStorage = FlutterSecureStorage();
-    settings = AppSettings.load(prefs);
+    settings = AppSettings.load(prefs, secureStorage);
     settings.account = await Account.getAccount();
     settingsNotifier = ValueNotifier(settings);
   }

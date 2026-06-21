@@ -389,6 +389,15 @@ class _SettingsState extends State<Settings> {
               );
             },
           ),
+          ListTile(
+            leading: Icon(Icons.password),
+            trailing: IconButton(
+                onPressed: () {
+
+                },
+                icon: Icon(Icons.add)
+            ),
+          ),
           Divider(),
           ListTile(
             trailing: Text(
