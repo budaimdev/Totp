@@ -144,6 +144,7 @@ class _Import extends State<Import> {
           secret: secret,
           label: param.name,
           digits: digits,
+            period: 30
         );
         await wrapper.addOrUpdateTotp(totp);
       }

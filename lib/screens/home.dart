@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:math';
+import 'dart:typed_data';
 
+import 'package:base32/base32.dart' as base32lib;
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:totp/totp.dart';
 import 'package:totp_app/classes/totp_class.dart';
 import 'package:totp_app/helpers/database.dart';
 
@@ -41,18 +44,37 @@ class HomeState extends State<Home> {
     });
   }
 
+
+  String generateTotp(List<int> secretBytes,
+      {int digits = 6, int period = 30}) {
+    final counter = DateTime
+        .now()
+        .toUtc()
+        .millisecondsSinceEpoch ~/ 1000 ~/ period;
+
+    final counterBytes = ByteData(8)
+      ..setUint64(0, counter, Endian.big);
+
+    final hmac = Hmac(sha1, secretBytes);
+    final hash = hmac
+        .convert(counterBytes.buffer.asUint8List())
+        .bytes;
+
+    final offset = hash[hash.length - 1] & 0x0f;
+    final binCode = (hash[offset] & 0x7f) << 24 |
+    (hash[offset + 1] & 0xff) << 16 |
+    (hash[offset + 2] & 0xff) << 8 |
+    (hash[offset + 3] & 0xff);
+
+    final otp = binCode % pow(10, digits).toInt();
+    return otp.toString().padLeft(digits, '0');
+  }
+
   String _time(String secret, int digits, int period) {
     try {
-      final List<int> secretBytes = base32.decode(secret.toUpperCase().trim());
-
-      final totp = Totp(
-        algorithm: Algorithm.sha1,
-        secret: secretBytes,
-        digits: digits,
-        period: period,
-      );
-      final datetime = DateTime.now().toUtc();
-      return totp.generate(datetime);
+      final List<int> secretBytes = base32lib.base32.decode(
+          secret.toUpperCase().trim());
+      return generateTotp(secretBytes, digits: digits, period: period);
     } catch (e) {
       return "------";
     }
