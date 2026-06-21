@@ -6,6 +6,7 @@ import 'package:totp_app/helpers/database.dart';
 import 'package:totp_app/helpers/local_storage.dart';
 import 'package:totp_app/screens/editor.dart';
 import 'package:totp_app/screens/home.dart';
+import 'package:totp_app/screens/import.dart';
 import 'package:totp_app/screens/settings.dart';
 
 Future<void> main() async {
@@ -93,6 +94,16 @@ class Sidebar extends StatelessWidget {
               Navigator.of(
                 context,
               ).push(MaterialPageRoute<void>(builder: (context) => Settings()));
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.sync_alt),
+            title: const Text("Import"),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute<void>(builder: (context) => Import()));
             },
           ),
         ],
