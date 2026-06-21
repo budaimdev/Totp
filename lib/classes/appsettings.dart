@@ -63,8 +63,8 @@ class AppSettings {
     await LocalStorage.secureStorage.write(key: "syncPass", value: password);
   }
 
-  Future<String> getSyncPassword() async {
-    return await LocalStorage.secureStorage.read(key: "syncPass") ?? "";
+  Future<String?> getSyncPassword() async {
+    return await LocalStorage.secureStorage.read(key: "syncPass");
   }
 
   Future<void> deleteSyncPassword() async {

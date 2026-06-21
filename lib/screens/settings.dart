@@ -29,9 +29,7 @@ enum AccountActions {
           builder: (BuildContext context) {
             return AlertDialog(
               title: const Text("Delete account?"),
-              content: Text(
-                  "Do you really want to delete this account?"
-              ),
+              content: Text("Do you really want to delete this account?"),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -68,6 +66,7 @@ class Settings extends StatefulWidget {
 
 class _SettingsState extends State<Settings> {
   AccountActions? selectedItem;
+  TextEditingController passwordController = TextEditingController();
 
   Future<void> openColorPicker(BuildContext context) async {
     final Color newColor = await showColorPickerDialog(
@@ -113,8 +112,11 @@ class _SettingsState extends State<Settings> {
   void _setupAuth() async {
     Account? account = await Account.getAccount();
     if (account == null) return;
-    LocalStorage.webdavClient =
-        Webdav().init(account.loginName, account.appPassword, account.url);
+    LocalStorage.webdavClient = Webdav().init(
+      account.loginName,
+      account.appPassword,
+      account.url,
+    );
   }
 
   void delete() async {
@@ -124,17 +126,93 @@ class _SettingsState extends State<Settings> {
       LocalStorage.settingsNotifier.value = LocalStorage.settings;
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text("Removed user successfully.")
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: const Text("Removed user successfully.")),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text("Failed to remove user.")
-        ));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: const Text("Failed to remove user.")));
       }
     }
+  }
+
+  void openPasswordDialog() async {
+    String? password = await LocalStorage.settings.getSyncPassword();
+    passwordController.text = password ?? "";
+    bool hideSecret = true;
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, setDialogState) {
+            return AlertDialog(
+              title: password != null
+                  ? const Text("Change password")
+                  : const Text("Setup new password"),
+              content: TextField(
+                keyboardType: TextInputType.visiblePassword,
+                obscureText: hideSecret,
+                controller: passwordController,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setDialogState(() {
+                        hideSecret = !hideSecret;
+                      });
+                    },
+                    icon: hideSecret
+                        ? Icon(Icons.visibility)
+                        : Icon(Icons.visibility_off),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text("Cancel"),
+                ),
+                FilledButton(
+                  onPressed: password != null
+                      ? () async {
+                    await LocalStorage.settings.deleteSyncPassword();
+
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+                  }
+                      : null,
+                  style: FilledButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.red,
+                  ),
+                  child: const Text("Delete"),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    await LocalStorage.settings.setSyncPass(
+                      passwordController.text,
+                    );
+
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  child: const Text("Save"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -289,114 +367,132 @@ class _SettingsState extends State<Settings> {
             valueListenable: LocalStorage.settingsNotifier,
             builder: (context, value, child) {
               return ListTile(
-                  title: const Text("Account"),
-                  trailing: LocalStorage.settings.useSync ? LocalStorage
-                      .settings.account == null
-                      ? IconButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (BuildContext context) => Login(),
-                        ),
-                      );
-                    },
-                    icon: Icon(Icons.add),
-                  )
-                      : MenuAnchor(
-                    builder:
-                        (BuildContext context,
-                        MenuController controller,
-                        Widget? child,) {
-                      return GestureDetector(
-                        onTap: () {
-                          if (controller.isOpen) {
-                            controller.close();
-                          } else {
-                            controller.open();
-                          }
-                        },
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          alignment: Alignment.topCenter,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                Theme
-                                    .of(context)
-                                    .colorScheme
-                                    .primary,
-                                Theme
-                                    .of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withValues(alpha: 0.8),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            border: Border.all(
-                              color: Theme
+                title: const Text("Account"),
+                trailing: LocalStorage.settings.useSync
+                    ? LocalStorage.settings.account == null
+                    ? IconButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (BuildContext context) => Login(),
+                      ),
+                    );
+                  },
+                  icon: Icon(Icons.add),
+                )
+                    : MenuAnchor(
+                  builder:
+                      (BuildContext context,
+                      MenuController controller,
+                      Widget? child,) {
+                    return GestureDetector(
+                      onTap: () {
+                        if (controller.isOpen) {
+                          controller.close();
+                        } else {
+                          controller.open();
+                        }
+                      },
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.topCenter,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme
                                   .of(
                                 context,
                               )
                                   .colorScheme
-                                  .primaryContainer,
-                              width: 3,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(
-                                  alpha: 0.15,
-                                ),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
+                                  .primary,
+                              Theme
+                                  .of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withValues(alpha: 0.8),
                             ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          child: Text(
-                            LocalStorage.settings.account!.loginName.isNotEmpty
-                                ?
-                            LocalStorage.settings.account!.loginName[0]
-                                .toUpperCase()
-                                : "?",
-                            style: const TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                              letterSpacing: 0,
+                          border: Border.all(
+                            color: Theme
+                                .of(
+                              context,
+                            )
+                                .colorScheme
+                                .primaryContainer,
+                            width: 3,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(
+                                alpha: 0.15,
+                              ),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
                             ),
+                          ],
+                        ),
+                        child: Text(
+                          LocalStorage
+                              .settings
+                              .account!
+                              .loginName
+                              .isNotEmpty
+                              ? LocalStorage
+                              .settings
+                              .account!
+                              .loginName[0]
+                              .toUpperCase()
+                              : "?",
+                          style: const TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 0,
                           ),
                         ),
-                      );
-                    },
-                    menuChildren: AccountActions.values.map((
-                        AccountActions action,) {
-                      return MenuItemButton(
-                        leadingIcon: Icon(action.icon),
-                        child: Text(action.name),
-                        onPressed: () {
-                          action.execute(context, delete);
+                      ),
+                    );
+                  },
+                  menuChildren: AccountActions.values.map((
+                      AccountActions action,) {
+                    return MenuItemButton(
+                      leadingIcon: Icon(action.icon),
+                      child: Text(action.name),
+                      onPressed: () {
+                        action.execute(context, delete);
 
-                          setState(() {
-                            selectedItem = action;
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ) : const Text("Disabled")
+                        setState(() {
+                          selectedItem = action;
+                        });
+                      },
+                    );
+                  }).toList(),
+                )
+                    : const Text("Disabled"),
               );
             },
           ),
-          ListTile(
-            leading: Icon(Icons.password),
-            trailing: IconButton(
-                onPressed: () {
-
-                },
-                icon: Icon(Icons.add)
-            ),
+          ValueListenableBuilder(
+              valueListenable: LocalStorage.settingsNotifier,
+              builder: (context, value, child) {
+                return ListTile(
+                  leading: Icon(Icons.password),
+                  trailing: IconButton(
+                    onPressed: !LocalStorage.settings.useSync
+                        ? null
+                        : () {
+                      openPasswordDialog();
+                    },
+                    icon: LocalStorage.settings.syncPass
+                        ? Icon(Icons.edit)
+                        : Icon(Icons.add),
+                  ),
+                );
+              }
           ),
           Divider(),
           ListTile(
@@ -443,5 +539,11 @@ class _SettingsState extends State<Settings> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    passwordController.dispose();
+    super.dispose();
   }
 }
