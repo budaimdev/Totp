@@ -29,12 +29,19 @@ class _Scanner extends State<Scanner> {
   @override
   void initState() {
     super.initState();
-
     controller = MobileScannerController(
       formats: [BarcodeFormat.qrCode],
       torchEnabled: false,
       autoStart: true,
     );
+
+    Future.delayed(Duration(milliseconds: 200), () {
+      if (mounted) {
+        setState(() {
+          controller.start();
+        });
+      }
+    });
   }
 
   @override
